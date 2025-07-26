@@ -49,8 +49,10 @@ export const PDFAnalyzer = () => {
   const [activeTab, setActiveTab] = useState("upload");
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File input triggered", event.target.files);
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
+      console.log("Valid PDF selected:", file.name);
       setSelectedFile(file);
       setAnalysisResult(null);
       toast({
@@ -58,6 +60,7 @@ export const PDFAnalyzer = () => {
         description: `Ready to analyze: ${file.name}`,
       });
     } else {
+      console.log("Invalid file selected:", file?.type);
       toast({
         title: "Invalid File",
         description: "Please select a valid PDF file",
@@ -319,9 +322,9 @@ export const PDFAnalyzer = () => {
                     className="hidden"
                     id="pdf-upload"
                   />
-                  <label htmlFor="pdf-upload">
-                    <Button variant="hero" className="cursor-pointer">
-                      Choose PDF File
+                  <label htmlFor="pdf-upload" className="cursor-pointer">
+                    <Button variant="hero" asChild>
+                      <span>Choose PDF File</span>
                     </Button>
                   </label>
                   {selectedFile && (
