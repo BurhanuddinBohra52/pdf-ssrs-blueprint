@@ -5,8 +5,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3 } from "lucide-react";
+import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database } from "lucide-react";
 import { PDFParser, PDFAnalysisResult as PDFParserResult } from "@/utils/PDFParser";
+import { RDLGenerator } from "@/utils/RDLGenerator";
 
 interface PDFComponent {
   id: string;
@@ -275,6 +276,32 @@ export const PDFAnalyzer = () => {
     });
   };
 
+  const generateRDLTemplate = () => {
+    if (!analysisResult) return '';
+    
+    return RDLGenerator.generateRDLTemplate([], [], analysisResult.components);
+  };
+
+  const downloadRDLTemplate = () => {
+    if (!analysisResult) return;
+    
+    const rdlContent = generateRDLTemplate();
+    const blob = new Blob([rdlContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedFile?.name.replace('.pdf', '')}_rdl_template.rdl`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "RDL Template Downloaded",
+      description: "RDL template with data source and dataset fields ready for editing",
+    });
+  };
+
   const getComponentIcon = (type: string) => {
     switch (type) {
       case 'textbox': return <Type className="w-4 h-4" />;
@@ -312,7 +339,7 @@ export const PDFAnalyzer = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gradient-card shadow-card">
+        <TabsList className="grid w-full grid-cols-4 bg-gradient-card shadow-card">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload PDF
@@ -324,6 +351,10 @@ export const PDFAnalyzer = () => {
           <TabsTrigger value="results" className="flex items-center gap-2" disabled={!analysisResult}>
             <Grid3X3 className="w-4 h-4" />
             Results
+          </TabsTrigger>
+          <TabsTrigger value="rdl" className="flex items-center gap-2" disabled={!analysisResult}>
+            <Database className="w-4 h-4" />
+            RDL Template
           </TabsTrigger>
         </TabsList>
 
@@ -508,6 +539,98 @@ export const PDFAnalyzer = () => {
                     {analysisResult.ssrsBlueprint.substring(0, 1000)}...
                   </pre>
                 </div>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rdl" className="space-y-6">
+          {analysisResult && (
+            <>
+              <Card className="p-6 bg-gradient-card shadow-card">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Database className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">RDL Template Generator</h3>
+                      <p className="text-muted-foreground">
+                        Download RDL template with data source and dataset fields for editing
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={downloadRDLTemplate} variant="hero" size="lg">
+                    <Download className="w-4 h-4" />
+                    Download RDL Template
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Template Features:</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Complete data source configuration
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Dataset with customizable fields
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Report parameters setup
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Layout based on PDF analysis
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Ready for SSRS deployment
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Next Steps:</h4>
+                    <ol className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex gap-2">
+                        <span className="text-primary font-medium">1.</span>
+                        Download the RDL template file
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary font-medium">2.</span>
+                        Open in SQL Server Report Builder
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary font-medium">3.</span>
+                        Edit data source connection string
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary font-medium">4.</span>
+                        Customize dataset fields and queries
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary font-medium">5.</span>
+                        Deploy to SSRS server
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-gradient-card shadow-card">
+                <h3 className="text-lg font-semibold mb-4">RDL Template Preview</h3>
+                <div className="bg-muted/30 p-4 rounded-lg max-h-96 overflow-y-auto">
+                  <pre className="text-xs whitespace-pre-wrap">
+                    {generateRDLTemplate().substring(0, 2000)}...
+                  </pre>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This is a preview of the RDL template. Download the complete file to edit all data source and dataset configurations.
+                </p>
               </Card>
             </>
           )}
