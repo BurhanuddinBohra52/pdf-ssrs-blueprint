@@ -80,79 +80,22 @@ export const PDFAnalyzer = () => {
     try {
       // Step 1: Parse PDF using JavaScript PDF parser
       setProgress(20);
+      console.log('Starting PDF analysis for:', selectedFile.name);
+      
       const pdfAnalysis = await PDFParser.parsePDF(selectedFile);
-      
       setProgress(50);
-      console.log('PDF Analysis Result:', pdfAnalysis);
       
-      // Step 2: Convert to our component format (for now using mock data)
+      console.log('PDF Analysis Result:', pdfAnalysis);
+      console.log('Found sections:', pdfAnalysis.sections.length);
+      console.log('Found tables:', pdfAnalysis.tables.length);
+      console.log('Total text items:', pdfAnalysis.allTextItems.length);
+      
+      // Step 2: Convert real PDF analysis to our component format
       setProgress(80);
+      const analysisResult = convertPDFAnalysisToComponents(pdfAnalysis);
       
       setProgress(100);
       
-      // Generate result based on PDF analysis
-      const analysisResult: AnalysisResult = {
-        pages: 1,
-        sections: {
-          header: [
-            {
-              id: 'header-1',
-              type: 'textbox',
-              section: 'header',
-              x: 50, y: 20, width: 500, height: 30,
-              content: 'INVOICE',
-              styles: { fontSize: 24, fontFamily: 'Arial', alignment: 'center' }
-            },
-            {
-              id: 'header-2',
-              type: 'textbox',
-              section: 'header',
-              x: 400, y: 60, width: 150, height: 20,
-              content: 'Invoice #: [InvoiceNumber]',
-              styles: { fontSize: 12, fontFamily: 'Arial' }
-            }
-          ],
-          body: [
-            {
-              id: 'body-table-1',
-              type: 'table',
-              section: 'body',
-              x: 50, y: 150, width: 500, height: 200,
-              tableData: {
-                rows: 5,
-                columns: 4,
-                cells: [
-                  ['Item', 'Description', 'Qty', 'Amount'],
-                  ['[Item1]', '[Description1]', '[Qty1]', '[Amount1]'],
-                  ['[Item2]', '[Description2]', '[Qty2]', '[Amount2]'],
-                  ['[Item3]', '[Description3]', '[Qty3]', '[Amount3]'],
-                  ['', 'Total:', '', '[TotalAmount]']
-                ]
-              }
-            }
-          ],
-          footer: [
-            {
-              id: 'footer-1',
-              type: 'textbox',
-              section: 'footer',
-              x: 50, y: 400, width: 500, height: 15,
-              content: 'Thank you for your business!',
-              styles: { fontSize: 10, fontFamily: 'Arial', alignment: 'center' }
-            }
-          ]
-        },
-        components: [],
-        ssrsBlueprint: generateSSRSBlueprint()
-      };
-
-      // Flatten components
-      analysisResult.components = [
-        ...analysisResult.sections.header,
-        ...analysisResult.sections.body,
-        ...analysisResult.sections.footer
-      ];
-
       setAnalysisResult(analysisResult);
       setActiveTab("results");
       
@@ -161,6 +104,7 @@ export const PDFAnalyzer = () => {
         description: `Found ${analysisResult.components.length} components across ${analysisResult.pages} page(s)`,
       });
     } catch (error) {
+      console.error('PDF Analysis Error:', error);
       toast({
         title: "Analysis Failed",
         description: "Failed to analyze PDF. Please try again.",
@@ -169,6 +113,81 @@ export const PDFAnalyzer = () => {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const convertPDFAnalysisToComponents = (pdfAnalysis: PDFParserResult): AnalysisResult => {
+    const components: PDFComponent[] = [];
+    const sections = {
+      header: [] as PDFComponent[],
+      body: [] as PDFComponent[],
+      footer: [] as PDFComponent[]
+    };
+
+    // Convert each section's text items to components
+    pdfAnalysis.sections.forEach((section, sectionIndex) => {
+      section.items.forEach((item, itemIndex) => {
+        const component: PDFComponent = {
+          id: `${section.type}-${sectionIndex}-${itemIndex}`,
+          type: 'textbox',
+          section: section.type,
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+          width: Math.round(item.width || 100),
+          height: Math.round(item.height || 20),
+          content: item.text,
+          styles: {
+            fontSize: Math.round(item.fontSize),
+            fontFamily: item.fontFamily,
+            alignment: 'left'
+          }
+        };
+        
+        components.push(component);
+        sections[section.type].push(component);
+      });
+    });
+
+    // Convert detected tables to table components
+    pdfAnalysis.tables.forEach((table, tableIndex) => {
+      const tableComponent: PDFComponent = {
+        id: `table-${tableIndex}`,
+        type: 'table',
+        section: 'body',
+        x: Math.round(table.boundingBox.x),
+        y: Math.round(table.boundingBox.y),
+        width: Math.round(table.boundingBox.width),
+        height: Math.round(table.boundingBox.height),
+        tableData: {
+          rows: table.rows,
+          columns: table.columns,
+          cells: generateTableCellsFromPDF(table)
+        }
+      };
+      
+      components.push(tableComponent);
+      sections.body.push(tableComponent);
+    });
+
+    return {
+      pages: 1,
+      sections,
+      components,
+      ssrsBlueprint: generateSSRSBlueprint()
+    };
+  };
+
+  const generateTableCellsFromPDF = (table: any): string[][] => {
+    // Create a 2D array for the table cells
+    const cells: string[][] = Array(table.rows).fill(null).map(() => Array(table.columns).fill(''));
+    
+    // Fill the cells with actual data from PDF
+    table.cells.forEach((cell: any) => {
+      if (cell.row < table.rows && cell.column < table.columns) {
+        cells[cell.row][cell.column] = cell.text;
+      }
+    });
+    
+    return cells;
   };
 
   const generateSSRSBlueprint = () => {
