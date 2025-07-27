@@ -1,0 +1,1859 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="dsARForm">
+      <DataSourceReference>/SaaS5411ThirdSSRS_165371/reports/SharedReportDataSource</DataSourceReference>
+      <rd:SecurityType>None</rd:SecurityType>
+      <rd:DataSourceID>41db51c6-a7ec-436e-85d9-73e361bfb114</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="ARForm">
+      <Query>
+        <DataSourceName>dsARForm</DataSourceName>
+        <CommandText>="SELECT 
+T1.RptLanguageID,
+T1.Company,
+T1.CreditMemo,
+T1.Calc_ExtPriceTotal,
+T1.CustNum,
+T1.DocDepositCredit,
+T1.DocInvoiceAmt,
+T1.Calc_TotalMiscChrg,
+T1.Calc_TotalAdvBillCred,
+T1.DocRounding,
+T1.DocumentPrinted,
+T1.Posted,
+T1.InvoiceComment,
+T1.InvoiceDate,
+T1.InvoiceNum,
+T1.InvoiceType,
+T1.LegalNumber,
+T1.PONum,
+T1.SoldToInvoiceAddress,
+T1.Calc_BillToAddressList,
+T1.Calc_BottomAddress,
+T1.Calc_CompanyAddressList,
+T1.Calc_CurrDocDesc,
+T1.Calc_CurSymbol,
+T1.Calc_CustContactName,
+T1.Calc_CustPartOpts,
+T1.Calc_DteOrdrd,
+T1.Calc_fFOB,
+T1.Calc_MulPackNum,
+T1.Calc_mulponum,
+T1.Calc_MulShipDate,
+T1.Calc_MulShipTo,
+T1.Calc_MulShipVia,
+T1.Calc_MultSoldTo,
+T1.Calc_MultTaxID,
+T1.Calc_NumRecordPerPage,
+T1.Calc_NumTotalParts,
+T1.Calc_PackNum,
+T1.Calc_PrintBottomAddress,
+T1.Calc_SalesPerson,
+T1.Calc_SalesTerms,
+T1.Calc_ShipDate,
+T1.Calc_ShipToAddressList,
+T1.Calc_ShipToContactName,
+T1.Calc_ShipVia,
+T1.[Calc_Voucher-String] as Calc_Voucher_String,
+T1.CurrencyCode_CurrencyID,
+T1.CurrencyCode_DecimalsGeneral,
+T1.CurrencyCode_DecimalsPrice,
+T1.Calc_SEBankRef,
+T1.Calc_CustResaleID,
+T1.CHISRCodeLine,
+T1.Calc_CHBankAcctIBANCode,
+T1.Calc_CHBankAcctISRPartyID,
+T1.Calc_DocDspTaxAmt,
+T1.Calc_IsDraftCopy, 
+T1.FirstPrintDate, 
+T1.Calc_ReverseChargeTax as Calc_ReverseChargeTaxTotal, 
+T1.DocCopyNum, 
+T1.PayDiscDays,
+T2.Calc_TrackByAttribute,
+T2.AttributeSetShortDescription,
+T2.Company as InvcDtl_Company,
+T2.DocAdvanceBillCredit,
+T2.DocDiscount,
+T2.DocUnitPrice,
+T2.InvoiceComment as InvcDtl_InvoiceComment,
+T2.InvoiceLine,
+T2.InvoiceNum as InvcDtl_InvoiceNum,
+T2.PackLine,
+T2.PackNum,
+T2.DropShipPackSlip,
+T2.PartNum,
+T2.POLine,
+T2.PricePerCode,
+T2.RevisionNum,
+T2.SalesUM,
+T2.SellingOrderQty,
+T2.SellingShipQty,
+T2.ShipDate,
+T2.XPartNum,
+T2.XRevisionNum,
+T2.Calc_ActDate,
+T2.Calc_BackOrdQty,
+T2.Calc_UnitPrice,
+T2.Calc_ExtPrice,
+T2.Calc_Duration,
+T2.Calc_GetNextLegalNum,
+T2.Calc_InvcComment,
+T2.Calc_InvoiceDisplayLine,
+T2.Calc_IsKitParent,
+T2.Calc_JobNumber,
+T2.Calc_LabDur,
+T2.Calc_LabMod,
+T2.Calc_Labor,
+T2.Calc_LineDesc,
+T2.Calc_LineSoldToAddressList,
+T2.Calc_MatDur,
+T2.Calc_Mate,
+T2.Calc_MatMod,
+T2.Calc_Misc,
+T2.Calc_MiscDur,
+T2.Calc_MiscMod,
+T2.Calc_Modifier,
+T2.Calc_NextLegalNumID,
+T2.Calc_NumLineByInv,
+T2.Calc_ponum,
+T2.Calc_PSLegalNum,
+T2.Calc_Reference,
+T2.Calc_SerialNumber,
+T2.Calc_SerialNumber2,
+T2.Calc_SerialNumber3,
+T2.Calc_SerialNumber4,
+T2.Calc_SerialNumber5,
+T2.Calc_SerialNumber6,
+T2.Calc_SerialNumber7,
+T2.Calc_ShipToAddressList as InvcDtl_Calc_ShipToAddressList,
+T2.Calc_ShipToContactName as InvcDtl_Calc_ShipToContactName,
+T2.Calc_ShipToShipVia,
+T2.Calc_WarrDesc,
+T2.Calc_WhseCode,
+T2.OrderLine_KitFlag,
+ISNULL(T2.OrderLine_KitPricing,'') AS OrderLine_KitPricing,
+ISNULL(T2.OrderLine_KitPrintCompsInv,0)AS OrderLine_KitPrintCompsInv,
+ISNULL(T2.OrderLine_KitShipComplete,0)AS OrderLine_KitShipComplete,
+T2.OrderLine_KitsLoaded,
+T2.PartNum_PartDescription, 
+T2.EpicorFSA, 
+T3.CallComment,
+T3.CallQty,
+T3.PartNum as FSCallDt_PartNum,
+T3.RevisionNum as FSCallDt_RevisionNum,
+T3.XPartNum as FSCallDt_XPartNum,
+T3.XRevisionNum as FSCallDt_XRevisionNum,
+T3.Calc_CProb,
+T3.Calc_fCallLine,
+T3.Calc_InvoiceLine,
+T3.Calc_InvoiceNum, 
+T4.Calc_InvoiceNum as FSCallMt_Calc_InvoiceNum,
+T4.Calc_MatNum,
+T4.Calc_MtPaNum,
+T4.Calc_MtQty,
+T4.Calc_MtBillPrice,
+T4.Calc_MtExtPrice,
+T4.Calc_MtLinedesc,
+T4.Calc_MtRevNum,
+T4.ResReasonCode, 
+T4.Calc_MtCount,
+T5.RptLanguageID as Label_RptLanguageID,
+T5.Calc_ActDate  as Label_Calc_ActDate,
+T5.Calc_CreditMemo as Label_Calc_CreditMemo,
+T5.Calc_Duration as Label_Calc_Duration,
+T5.Calc_JobNumber as Label_Calc_JobNumber,
+T5.Calc_LabDur as Label_Calc_LabDur,
+T5.Calc_Labor as Label_Calc_Labor,
+T5.Calc_MatDur as Label_Calc_MatDur,
+T5.RptLiteralsLMaterial as Label_Calc_Mate,
+T5.Calc_Misc as Label_Calc_Misc,
+T5.Calc_MiscDur as Label_Calc_MiscDur,
+T5.Calc_MtExtPrice as Label_Calc_MtExtPrice,
+T5.Calc_SerialNumber as Label_Calc_SerialNumber,
+T5.DocUnitPrice as Label_DocUnitPrice,
+T5.InvoiceLine as Label_InvoiceLine,
+T5.PONum as Label_PONum,
+T5.ProbReasonCode as Label_ProbReasonCode,
+T5.RptLiteralsLDescription as Label_Reference,
+T5.RptLiteralsLBckOrd,
+T5.RptLiteralsLBillTo,
+T5.RptLiteralsLTWTotalTax,
+T5.RptLiteralsLComeFrom,
+T5.RptLiteralsLContinueInNext,
+T5.RptLiteralsLCusPart, 
+T5.RptLiteralsLDate,
+T5.RptLiteralsLEMaila,
+T5.RptLiteralsLExtPrice,
+T5.RptLiteralsLFax,
+T5.RptLiteralsLFOB,
+T5.RptLiteralsLHdng,
+T5.RptLiteralsLInvoice,
+T5.RptLiteralsLLegNum,
+T5.RptLiteralsLLine,
+T5.RptLiteralsLLineRef,
+T5.RptLiteralsLof,
+T5.RptLiteralsLOurPart,
+T5.RptLiteralsLPackSlp,
+T5.RptLiteralsLPage,
+T5.RptLiteralsLPartDesc,
+T5.RptLiteralsLPartRev,
+T5.RptLiteralsLPhone,
+T5.RptLiteralsLPONum,
+T5.RptLiteralsLAULessDeposit,
+T5.RptLiteralsLQty,
+T5.RptLiteralsLQtyOrd,
+T5.RptLiteralsLRev,
+T5.RptLiteralsLLinesSubtotal,
+T5.RptLiteralsLRounding,
+T5.RptLiteralsLMiscChgs,
+T5.RptLiteralsLSalesKit,
+T5.RptLiteralsLSeeBelow,
+T5.RptLiteralsLShipTo,
+T5.RptLiteralsLShpVia,
+T5.RptLiteralsLSlsTxID,
+T5.RptLiteralsLSoldToL,
+T5.RptLiteralsLTotal,
+T5.RptLiteralsLWarrantyA,
+T5.RptLiteralsLWHCode,
+T5.ShipDate as Label_ShipDate,
+T5.UnitPrice as Label_UnitPrice,
+T5.RptLiteralsLSEOCR,
+T5.RptLiteralsLNOKID,
+T5.RptLiteralsLDiscountPercent,
+T5.RptLiteralsLVatNr,
+T5.RptLiteralsLlessAdvBill,
+T5.RptLiteralsLAttributeSet, 
+T5.RptLiteralsLFSAEquipmentPartNum, 
+T5.RptLiteralsLFSAServiceOrderNum,  
+T1.Calc_CustFax, 
+T6.EMailAddress, 
+T6.FaxNum, 
+T6.ResaleID, 
+T5.RptLiteralsLOrdered as Label_Calc_DteOrdrd,
+T5.RptLiteralsLSalsRep as Label_Calc_SalesPerson,
+T5.RptLiteralsLTrms as Label_Calc_SalesTerms, 
+T1.Calc_CustEMailAddress, 
+T1.Calc_DropShipPackSlip, 
+T7.InvoiceComment as FSContDt_InvoiceComment ,
+T7.ContractQty,
+T7.PricePerUnit,
+T7.DocPricePerUnit,
+T7.Calc_ContPrice, 
+T5.PricePerCode as Label_PricePerCode, 
+T5.PartNum as Label_PartNum,
+T5.ExtPrice as Label_ExtPrice, 
+T1.Calc_PELegalText,
+T5.RptLiteralsLAmt, 
+T5.Calc_SEBankRef as Label_Calc_SEBankRef, 
+T1.Calc_TaxMethod, 
+T1.SEBankRef, 
+T1.Calc_LessPrepaidDeposits, 
+T5.RptLiteralsLLessPrepDeposits, 
+T5.Calc_ReverseChargeTax as RptLiteralsLReverseChargeTax, 
+T7.ContractLine, 
+T7.PartNum as ContractPartNum, 
+T7.PartNum_PartDescription as ContractPartDescription, 
+T7.ContractNum as ContractNum,
+(CASE WHEN EXISTS(SELECT 1 FROM   InvcChrg_" + Parameters!TableGuid.Value + " Tmp WHERE  Tmp.Company = T1.Company AND    Tmp.InvoiceNum= T1.InvoiceNum AND    Tmp.InvoiceLine = T2.InvoiceLine) THEN 1 ELSE 0 END) AS 'HasFinCharges',
+ 
+T5.RptLiteralsLMiscChgs, 
+T5.[Description] AS Label_Description,
+
+T5.RptLiteralsLCopy, 
+T5.RptLiteralsLPrintedAt, 
+T5.RptLiteralsLFirstPrinted, 
+T5.RptLiteralsLDraftCopy, 
+T5.RptLiteralsLInternalUse, 
+T10.FSAEquipmentPartNum, 
+T10.FSAServiceOrderNum,
+T5.Calc_PLWasteRegisterNum as Label_Calc_PLWasteRegisterNum, 
+
+ISNULL(T8.TotalMiscChrg, 0) TotalMiscChrg,
+ISNULL(T18.TD_TotalMiscChrg, 0) TD_TotalMiscChrg,
+ISNULL(T18.TD_TotalPerc, 0) TD_TotalPerc,
+ISNULL(T19.TC_TotalMiscChrg, 0) TC_TotalMiscChrg,
+ISNULL(T19.TC_TotalPerc, 0) TC_TotalPerc,
+
+
+T5.Calc_CompanyEORINumber as Label_Calc_CompanyEORINumber,
+T1.Calc_CompanyEORINumber,
+T1.Calc_CustShipToEORINumber,
+T2.ServiceSource,
+T5.RptLiteralsLServiceSource,
+T1.OrderNum,
+T6.CustID,
+T12.CommercialSize1,
+T12.CommercialSize2,
+T12.UD_Size_c,
+T12.ISOrigCountry,
+T12.UPCCode1,
+T12.UPCCode2,
+T12.UPCCode3,
+T12.UD_CatalogNumber_c,
+T12.CommodityCode,
+T13.OrderDate,
+T14.Description As Commodity_Description,
+T15.ISOrigCountry As Country_ISOrigCountry,
+
+T2.Discount,
+ISNULL(T16.DocTaxAmt, 0)  DocTaxAmt 
+          ,T11.PayerRef as BankAcct_PayerRef, T11.TypeCode as BankAcct_TypeCode
+          FROM InvcHead_" + Parameters!TableGuid.Value + " T1
+          LEFT OUTER JOIN InvcDtl_" + Parameters!TableGuid.Value + " T2
+          ON T1.Company = T2.Company AND T1.InvoiceNum = T2.InvoiceNum
+          LEFT OUTER JOIN FSCallDt_" + Parameters!TableGuid.Value + " T3
+          ON T2.Company = T3.Company AND T2.InvoiceLine = T3.Calc_InvoiceLine AND T2.InvoiceNum = T3.Calc_InvoiceNum
+		  LEFT OUTER JOIN Part_" + Parameters!TableGuid.Value + " T12
+          ON T2.Company = T12.Company AND T2.PartNum = T12.PartNum
+		  LEFT OUTER JOIN OrderHed_" + Parameters!TableGuid.Value + " T13
+          ON T1.Company = T13.Company AND T1.OrderNum = T13.OrderNum
+		  LEFT OUTER JOIN ICommCode_" + Parameters!TableGuid.Value + " T14
+          ON T12.Company = T14.Company AND T12.CommodityCode = T14.CommodityCode
+		  LEFT OUTER JOIN Country_" + Parameters!TableGuid.Value + " T15
+          ON T12.Company = T15.Company AND T12.ISOrigCountry = T15.CountryNum
+		  LEFT OUTER JOIN ( SELECT IT.Company, IT.InvoiceNum, SUM(IT.DocTaxAmt) as DocTaxAmt 
+          FROM InvcTax_" + Parameters!TableGuid.Value + "  IT
+          GROUP BY IT.Company, IT.InvoiceNum) T16
+          ON T2.Company = T16.Company AND T2.InvoiceNum = T16.InvoiceNum 
+          LEFT OUTER JOIN FSCallMt_" + Parameters!TableGuid.Value + " T4
+          ON T3.Company = T4.Company AND T3.CallNum = T4.CallNum AND T3.Calc_fCallLine = T4.Calc_fCallLine AND T3.Calc_InvoiceLine = T4.Calc_InvoiceLine AND T3.Calc_InvoiceNum = T4.Calc_InvoiceNum
+          LEFT OUTER JOIN RptLabels_" + Parameters!TableGuid.Value + " T5
+          ON T1.RptLanguageID = T5.RptLanguageID LEFT OUTER JOIN Customer_" + Parameters!TableGuid.Value + " T6
+          ON T1.Company = T6.Company AND T1.CustNum = T6.CustNum AND T1.InvoiceNum = T6.Calc_InvoiceNum
+          LEFT OUTER JOIN FSContDt_" + Parameters!TableGuid.Value + " T7
+          ON T2.Company = T7.Company AND T2.InvoiceLine = T7.Calc_InvoiceLine AND T2.InvoiceNum = T7.Calc_InvoiceNum
+          LEFT OUTER JOIN
+		  (
+		  SELECT IM.Company, IM.InvoiceNum, IM.InvoiceLine, SUM(IM.DocMiscAmt) as TotalMiscChrg 
+		  FROM InvcMisc_" + Parameters!TableGuid.Value + " IM 
+		  INNER JOIN MiscChrg_" + Parameters!TableGuid.Value + " T17
+          ON IM.Company = T17.Company AND IM.MiscCode = T17.MiscCode AND T17.TypeSubtotal_c != 'TRADEDisco' AND T17.TypeSubtotal_c != 'Freight' 
+		  GROUP BY IM.Company, IM.InvoiceNum, IM.InvoiceLine) T8
+          ON T1.Company = T8.Company AND T1.InvoiceNum = T8.InvoiceNum AND T2.InvoiceLine = T8.InvoiceLine
+          
+          LEFT OUTER JOIN FSAExtData_" + Parameters!TableGuid.Value + " T10
+          ON T2.Company = T10.Company AND T2.SysRowID = T10.ForeignSysRowID
+          LEFT OUTER JOIN ( SELECT  temp.Company, temp.InvoiceNum, temp.InvoiceLine, MIN(temp.SeqNum) as MinSeqNum
+          FROM InvcMisc_" + Parameters!TableGuid.Value + "  temp
+          GROUP BY     temp.Company, temp.InvoiceNum, temp.InvoiceLine) T9
+          ON T1.Company = T9.Company
+          AND T1.InvoiceNum = T9.InvoiceNum
+          AND T2.InvoiceLine = T9.InvoiceLine
+          LEFT OUTER JOIN (SELECT DISTINCT Company, BankAcctID, PayerRef, TypeCode FROM BankAcct_" + Parameters!TableGuid.Value + ") T11
+          ON T1.Company = T11.Company AND T1.OurBank = T11.bankacctid 
+		  
+		  LEFT OUTER JOIN
+		  (
+		  SELECT IM.Company, IM.InvoiceNum, IM.InvoiceLine, SUM(IM.DocMiscAmt) as TD_TotalMiscChrg, SUM(IM.Percentage) as TD_TotalPerc  
+		  FROM InvcMisc_" + Parameters!TableGuid.Value + " IM 
+		  INNER JOIN MiscChrg_" + Parameters!TableGuid.Value + " T17
+          ON IM.Company = T17.Company AND IM.MiscCode = T17.MiscCode AND T17.TypeSubtotal_c = 'TRADEDisco' AND T17.Type = 'P' 
+		  GROUP BY IM.Company, IM.InvoiceNum, IM.InvoiceLine) T18 
+		  ON T1.Company = T18.Company AND T1.InvoiceNum = T18.InvoiceNum AND T2.InvoiceLine = T18.InvoiceLine
+		
+		 LEFT OUTER JOIN
+		  (
+		  SELECT IM.Company, IM.InvoiceNum, IM.InvoiceLine, SUM(IM.DocMiscAmt) as TC_TotalMiscChrg, SUM(IM.Percentage) as TC_TotalPerc  
+		  FROM InvcMisc_" + Parameters!TableGuid.Value + " IM 
+		  INNER JOIN MiscChrg_" + Parameters!TableGuid.Value + " T17
+          ON IM.Company = T17.Company AND IM.MiscCode = T17.MiscCode AND T17.TypeSubtotal_c = 'Freight' AND T17.Type = 'P' 
+		  GROUP BY IM.Company, IM.InvoiceNum, IM.InvoiceLine) T19 
+		  ON T1.Company = T19 .Company AND T1.InvoiceNum = T19 .InvoiceNum AND T2.InvoiceLine = T19 .InvoiceLine
+		
+		  
+          ORDER BY  T1.InvoiceNum, T2.Calc_NextLegalNumID, T2.InvoiceLine, T3.Calc_fCallLine, T4.Calc_MtCount"</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="RptLanguageID">
+          <DataField>RptLanguageID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Company">
+          <DataField>Company</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CreditMemo">
+          <DataField>CreditMemo</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="CustNum">
+          <DataField>CustNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="DocDepositCredit">
+          <DataField>DocDepositCredit</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocInvoiceAmt">
+          <DataField>DocInvoiceAmt</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocRounding">
+          <DataField>DocRounding</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocumentPrinted">
+          <DataField>DocumentPrinted</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceComment">
+          <DataField>InvoiceComment</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceDate">
+          <DataField>InvoiceDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceNum">
+          <DataField>InvoiceNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceType">
+          <DataField>InvoiceType</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="LegalNumber">
+          <DataField>LegalNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PONum">
+          <DataField>PONum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SoldToInvoiceAddress">
+          <DataField>SoldToInvoiceAddress</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_BillToAddressList">
+          <DataField>Calc_BillToAddressList</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_BottomAddress">
+          <DataField>Calc_BottomAddress</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CompanyAddressList">
+          <DataField>Calc_CompanyAddressList</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CurrDocDesc">
+          <DataField>Calc_CurrDocDesc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CurSymbol">
+          <DataField>Calc_CurSymbol</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CustContactName">
+          <DataField>Calc_CustContactName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CustPartOpts">
+          <DataField>Calc_CustPartOpts</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_DteOrdrd">
+          <DataField>Calc_DteOrdrd</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Calc_fFOB">
+          <DataField>Calc_fFOB</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MulPackNum">
+          <DataField>Calc_MulPackNum</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_mulponum">
+          <DataField>Calc_mulponum</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MulShipDate">
+          <DataField>Calc_MulShipDate</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MulShipTo">
+          <DataField>Calc_MulShipTo</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MulShipVia">
+          <DataField>Calc_MulShipVia</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MultSoldTo">
+          <DataField>Calc_MultSoldTo</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MultTaxID">
+          <DataField>Calc_MultTaxID</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_NumRecordPerPage">
+          <DataField>Calc_NumRecordPerPage</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_NumTotalParts">
+          <DataField>Calc_NumTotalParts</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_PackNum">
+          <DataField>Calc_PackNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_PrintBottomAddress">
+          <DataField>Calc_PrintBottomAddress</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SalesPerson">
+          <DataField>Calc_SalesPerson</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SalesTerms">
+          <DataField>Calc_SalesTerms</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ShipDate">
+          <DataField>Calc_ShipDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ShipToAddressList">
+          <DataField>Calc_ShipToAddressList</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ShipToContactName">
+          <DataField>Calc_ShipToContactName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ShipVia">
+          <DataField>Calc_ShipVia</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Voucher_String">
+          <DataField>Calc_Voucher_String</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CurrencyCode_CurrencyID">
+          <DataField>CurrencyCode_CurrencyID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CurrencyCode_DecimalsGeneral">
+          <DataField>CurrencyCode_DecimalsGeneral</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SEBankRef">
+          <DataField>Calc_SEBankRef</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CustResaleID">
+          <DataField>Calc_CustResaleID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvcDtl_Company">
+          <DataField>InvcDtl_Company</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="DocAdvanceBillCredit">
+          <DataField>DocAdvanceBillCredit</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocDiscount">
+          <DataField>DocDiscount</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocUnitPrice">
+          <DataField>DocUnitPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="InvcDtl_InvoiceComment">
+          <DataField>InvcDtl_InvoiceComment</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvoiceLine">
+          <DataField>InvoiceLine</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="InvcDtl_InvoiceNum">
+          <DataField>InvcDtl_InvoiceNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PackLine">
+          <DataField>PackLine</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PackNum">
+          <DataField>PackNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PartNum">
+          <DataField>PartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="POLine">
+          <DataField>POLine</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PricePerCode">
+          <DataField>PricePerCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RevisionNum">
+          <DataField>RevisionNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SalesUM">
+          <DataField>SalesUM</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SellingOrderQty">
+          <DataField>SellingOrderQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="SellingShipQty">
+          <DataField>SellingShipQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="ShipDate">
+          <DataField>ShipDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="XPartNum">
+          <DataField>XPartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="XRevisionNum">
+          <DataField>XRevisionNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ActDate">
+          <DataField>Calc_ActDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Calc_BackOrdQty">
+          <DataField>Calc_BackOrdQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ExtPrice">
+          <DataField>Calc_ExtPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Duration">
+          <DataField>Calc_Duration</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_GetNextLegalNum">
+          <DataField>Calc_GetNextLegalNum</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_InvcComment">
+          <DataField>Calc_InvcComment</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_InvoiceDisplayLine">
+          <DataField>Calc_InvoiceDisplayLine</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_JobNumber">
+          <DataField>Calc_JobNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_IsKitParent">
+          <DataField>Calc_IsKitParent</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_LabDur">
+          <DataField>Calc_LabDur</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_LabMod">
+          <DataField>Calc_LabMod</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Labor">
+          <DataField>Calc_Labor</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_LineDesc">
+          <DataField>Calc_LineDesc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_LineSoldToAddressList">
+          <DataField>Calc_LineSoldToAddressList</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MatDur">
+          <DataField>Calc_MatDur</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Mate">
+          <DataField>Calc_Mate</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MatMod">
+          <DataField>Calc_MatMod</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Misc">
+          <DataField>Calc_Misc</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MiscDur">
+          <DataField>Calc_MiscDur</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MiscMod">
+          <DataField>Calc_MiscMod</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Modifier">
+          <DataField>Calc_Modifier</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_NextLegalNumID">
+          <DataField>Calc_NextLegalNumID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_NumLineByInv">
+          <DataField>Calc_NumLineByInv</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ponum">
+          <DataField>Calc_ponum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_PSLegalNum">
+          <DataField>Calc_PSLegalNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Reference">
+          <DataField>Calc_Reference</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber">
+          <DataField>Calc_SerialNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvcDtl_Calc_ShipToAddressList">
+          <DataField>InvcDtl_Calc_ShipToAddressList</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="InvcDtl_Calc_ShipToContactName">
+          <DataField>InvcDtl_Calc_ShipToContactName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ShipToShipVia">
+          <DataField>Calc_ShipToShipVia</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_WarrDesc">
+          <DataField>Calc_WarrDesc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_WhseCode">
+          <DataField>Calc_WhseCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="OrderLine_KitFlag">
+          <DataField>OrderLine_KitFlag</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="OrderLine_KitPrintCompsInv">
+          <DataField>OrderLine_KitPrintCompsInv</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="OrderLine_KitsLoaded">
+          <DataField>OrderLine_KitsLoaded</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="PartNum_PartDescription">
+          <DataField>PartNum_PartDescription</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PONum_Line">
+          <Value>
+            =iif(Fields!Calc_mulponum.Value = False and not isnothing(Fields!POLine.Value), Fields!POLine.Value,
+            iif(Fields!Calc_mulponum.Value and isnothing(Fields!POLine.Value), Fields!Calc_ponum.Value,
+            iif(Fields!Calc_mulponum.Value, Fields!Calc_ponum.Value &amp; " / " &amp; Fields!POLine.Value, "")
+            )
+            )
+          </Value>
+        </Field>
+        <Field Name="CallComment">
+          <DataField>CallComment</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CallQty">
+          <DataField>CallQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="FSCallDt_PartNum">
+          <DataField>FSCallDt_PartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FSCallDt_RevisionNum">
+          <DataField>FSCallDt_RevisionNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FSCallDt_XPartNum">
+          <DataField>FSCallDt_XPartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FSCallDt_XRevisionNum">
+          <DataField>FSCallDt_XRevisionNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CProb">
+          <DataField>Calc_CProb</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_fCallLine">
+          <DataField>Calc_fCallLine</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_InvoiceLine">
+          <DataField>Calc_InvoiceLine</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="FSCallMt_Calc_InvoiceNum">
+          <DataField>FSCallMt_Calc_InvoiceNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_InvoiceNum">
+          <DataField>Calc_InvoiceNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MatNum">
+          <DataField>Calc_MatNum</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtPaNum">
+          <DataField>Calc_MtPaNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtQty">
+          <DataField>Calc_MtQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="CallPart">
+          <Value>=iif(isnothing(Fields!FSCallDt_XPartNum.Value), Fields!FSCallDt_PartNum.Value, Fields!FSCallDt_XPartNum.Value)</Value>
+        </Field>
+        <Field Name="Calc_MtBillPrice">
+          <DataField>Calc_MtBillPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtExtPrice">
+          <DataField>Calc_MtExtPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtLinedesc">
+          <DataField>Calc_MtLinedesc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtRevNum">
+          <DataField>Calc_MtRevNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ResReasonCode">
+          <DataField>ResReasonCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="MtPaNum">
+          <Value>=iif(Fields!Calc_MtPaNum.Value &lt;&gt; "", Fields!Calc_MtPaNum.Value, "")</Value>
+        </Field>
+        <Field Name="Calc_UnitPrice">
+          <DataField>Calc_UnitPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Label_Calc_ActDate">
+          <DataField>Label_Calc_ActDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_RptLanguageID">
+          <DataField>Label_RptLanguageID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_CreditMemo">
+          <DataField>Label_Calc_CreditMemo</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_Duration">
+          <DataField>Label_Calc_Duration</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_JobNumber">
+          <DataField>Label_Calc_JobNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_LabDur">
+          <DataField>Label_Calc_LabDur</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_Labor">
+          <DataField>Label_Calc_Labor</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_MatDur">
+          <DataField>Label_Calc_MatDur</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_Mate">
+          <DataField>Label_Calc_Mate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_Misc">
+          <DataField>Label_Calc_Misc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_MiscDur">
+          <DataField>Label_Calc_MiscDur</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_MtExtPrice">
+          <DataField>Label_Calc_MtExtPrice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_SerialNumber">
+          <DataField>Label_Calc_SerialNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_DocUnitPrice">
+          <DataField>Label_DocUnitPrice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_InvoiceLine">
+          <DataField>Label_InvoiceLine</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_PONum">
+          <DataField>Label_PONum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_ProbReasonCode">
+          <DataField>Label_ProbReasonCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Reference">
+          <DataField>Label_Reference</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLBckOrd">
+          <DataField>RptLiteralsLBckOrd</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLBillTo">
+          <DataField>RptLiteralsLBillTo</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLCusPart">
+          <DataField>RptLiteralsLCusPart</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLComeFrom">
+          <DataField>RptLiteralsLComeFrom</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLTWTotalTax">
+          <DataField>RptLiteralsLTWTotalTax</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLDate">
+          <DataField>RptLiteralsLDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLContinueInNext">
+          <DataField>RptLiteralsLContinueInNext</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLEMaila">
+          <DataField>RptLiteralsLEMaila</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLExtPrice">
+          <DataField>RptLiteralsLExtPrice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLFax">
+          <DataField>RptLiteralsLFax</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLFOB">
+          <DataField>RptLiteralsLFOB</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLHdng">
+          <DataField>RptLiteralsLHdng</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLInvoice">
+          <DataField>RptLiteralsLInvoice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLLegNum">
+          <DataField>RptLiteralsLLegNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLLine">
+          <DataField>RptLiteralsLLine</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLLineRef">
+          <DataField>RptLiteralsLLineRef</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLOurPart">
+          <DataField>RptLiteralsLOurPart</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLAULessDeposit">
+          <DataField>RptLiteralsLAULessDeposit</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLof">
+          <DataField>RptLiteralsLof</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLAttributeSet">
+          <DataField>RptLiteralsLAttributeSet</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLPackSlp">
+          <DataField>RptLiteralsLPackSlp</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLPage">
+          <DataField>RptLiteralsLPage</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLPartDesc">
+          <DataField>RptLiteralsLPartDesc</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLPhone">
+          <DataField>RptLiteralsLPhone</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLMiscChgs">
+          <DataField>RptLiteralsLMiscChgs</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLPartRev">
+          <DataField>RptLiteralsLPartRev</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLPONum">
+          <DataField>RptLiteralsLPONum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLQty">
+          <DataField>RptLiteralsLQty</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLQtyOrd">
+          <DataField>RptLiteralsLQtyOrd</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLRev">
+          <DataField>RptLiteralsLRev</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLLinesSubtotal">
+          <DataField>RptLiteralsLLinesSubtotal</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLRounding">
+          <DataField>RptLiteralsLRounding</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLSalesKit">
+          <DataField>RptLiteralsLSalesKit</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLSeeBelow">
+          <DataField>RptLiteralsLSeeBelow</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLShipTo">
+          <DataField>RptLiteralsLShipTo</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLShpVia">
+          <DataField>RptLiteralsLShpVia</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLSlsTxID">
+          <DataField>RptLiteralsLSlsTxID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLSoldToL">
+          <DataField>RptLiteralsLSoldToL</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLTotal">
+          <DataField>RptLiteralsLTotal</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLWarrantyA">
+          <DataField>RptLiteralsLWarrantyA</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLWHCode">
+          <DataField>RptLiteralsLWHCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_ShipDate">
+          <DataField>Label_ShipDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_UnitPrice">
+          <DataField>Label_UnitPrice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLSEOCR">
+          <DataField>RptLiteralsLSEOCR</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLNOKID">
+          <DataField>RptLiteralsLNOKID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLDiscountPercent">
+          <DataField>RptLiteralsLDiscountPercent</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLVatNr">
+          <DataField>RptLiteralsLVatNr</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CHISRCodeLine">
+          <DataField>CHISRCodeLine</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CHBankAcctIBANCode">
+          <DataField>Calc_CHBankAcctIBANCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CHBankAcctISRPartyID">
+          <DataField>Calc_CHBankAcctISRPartyID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLlessAdvBill">
+          <DataField>RptLiteralsLlessAdvBill</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="DropShipPackSlip">
+          <DataField>DropShipPackSlip</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_CustFax">
+          <DataField>Calc_CustFax</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="EMailAddress">
+          <DataField>EMailAddress</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FaxNum">
+          <DataField>FaxNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_MtCount">
+          <DataField>Calc_MtCount</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ResaleID">
+          <DataField>ResaleID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_DteOrdrd">
+          <DataField>Label_Calc_DteOrdrd</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_SalesPerson">
+          <DataField>Label_Calc_SalesPerson</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_SalesTerms">
+          <DataField>Label_Calc_SalesTerms</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CustEMailAddress">
+          <DataField>Calc_CustEMailAddress</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_DropShipPackSlip">
+          <DataField>Calc_DropShipPackSlip</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FSContDt_InvoiceComment">
+          <DataField>FSContDt_InvoiceComment</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ContractQty">
+          <DataField>ContractQty</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="PricePerUnit">
+          <DataField>PricePerUnit</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocPricePerUnit">
+          <DataField>DocPricePerUnit</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ContPrice">
+          <DataField>Calc_ContPrice</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Label_PricePerCode">
+          <DataField>Label_PricePerCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_PartNum">
+          <DataField>Label_PartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_ExtPrice">
+          <DataField>Label_ExtPrice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_PELegalText">
+          <DataField>Calc_PELegalText</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLAmt">
+          <DataField>RptLiteralsLAmt</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Label_Calc_SEBankRef">
+          <DataField>Label_Calc_SEBankRef</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_TaxMethod">
+          <DataField>Calc_TaxMethod</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SEBankRef">
+          <DataField>SEBankRef</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ContractLine">
+          <DataField>ContractLine</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calc_LessPrepaidDeposits">
+          <DataField>Calc_LessPrepaidDeposits</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ContractPartNum">
+          <DataField>ContractPartNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RptLiteralsLLessPrepDeposits">
+          <DataField>RptLiteralsLLessPrepDeposits</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ContractPartDescription">
+          <DataField>ContractPartDescription</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="CurrencyCode_DecimalsPrice">
+          <DataField>CurrencyCode_DecimalsPrice</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="HasFinCharges">
+          <DataField>HasFinCharges</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="HasMiscCharges">
+          <DataField>HasMiscCharges</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Description">
+          <DataField>Description</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_DocDspTaxAmt">
+          <DataField>Calc_DocDspTaxAmt</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="DocMiscAmt">
+          <DataField>DocMiscAmt</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="SeqNum">
+          <DataField>SeqNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Label_Description">
+          <DataField>Label_Description</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_TotalMiscChrg">
+          <DataField>Calc_TotalMiscChrg</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Calc_ExtPriceTotal">
+          <DataField>Calc_ExtPriceTotal</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="ContractNum">
+          <DataField>ContractNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="DisplayLineInfo">
+          <DataField>DisplayLineInfo</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLCopy">
+          <DataField>RptLiteralsLCopy</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLPrintedAt">
+          <DataField>RptLiteralsLPrintedAt</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLFirstPrinted">
+          <DataField>RptLiteralsLFirstPrinted</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_IsDraftCopy">
+          <DataField>Calc_IsDraftCopy</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="FirstPrintDate">
+          <DataField>FirstPrintDate</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="DocCopyNum">
+          <DataField>DocCopyNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Posted">
+          <DataField>Posted</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLDraftCopy">
+          <DataField>RptLiteralsLDraftCopy</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLInternalUse">
+          <DataField>RptLiteralsLInternalUse</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="FSAEquipmentPartNum">
+          <DataField>FSAEquipmentPartNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="FSAServiceOrderNum">
+          <DataField>FSAServiceOrderNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLFSAEquipmentPartNum">
+          <DataField>RptLiteralsLFSAEquipmentPartNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLFSAServiceOrderNum">
+          <DataField>RptLiteralsLFSAServiceOrderNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="EpicorFSA">
+          <DataField>EpicorFSA</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="OrderLine_KitPricing">
+          <DataField>OrderLine_KitPricing</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ReverseChargeTaxTotal">
+          <DataField>Calc_ReverseChargeTaxTotal</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLReverseChargeTax">
+          <DataField>RptLiteralsLReverseChargeTax</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Label_Calc_PLWasteRegisterNum">
+          <DataField>Label_Calc_PLWasteRegisterNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PayDiscDays">
+          <DataField>PayDiscDays</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="MiscCode">
+          <DataField>MiscCode</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_ChargeDesc">
+          <DataField>Calc_ChargeDesc</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_SerialNumber2">
+          <DataField>Calc_SerialNumber2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber3">
+          <DataField>Calc_SerialNumber3</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber4">
+          <DataField>Calc_SerialNumber4</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber5">
+          <DataField>Calc_SerialNumber5</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber6">
+          <DataField>Calc_SerialNumber6</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_SerialNumber7">
+          <DataField>Calc_SerialNumber7</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="BankAcct_PayerRef">
+          <DataField>BankAcct_PayerRef</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="BankAcct_TypeCode">
+          <DataField>BankAcct_TypeCode</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Label_Calc_CompanyEORINumber">
+          <DataField>Label_Calc_CompanyEORINumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CompanyEORINumber">
+          <DataField>Calc_CompanyEORINumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_CustShipToEORINumber">
+          <DataField>Calc_CustShipToEORINumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="AttributeSetShortDescription">
+          <DataField>AttributeSetShortDescription</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_TotalAdvBillCred">
+          <DataField>Calc_TotalAdvBillCred</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ServiceSource">
+          <DataField>ServiceSource</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="RptLiteralsLServiceSource">
+          <DataField>RptLiteralsLServiceSource</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="OrderLine_KitShipComplete">
+          <DataField>OrderLine_KitShipComplete</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_TrackByAttribute">
+          <DataField>Calc_TrackByAttribute</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="OrderNum">
+          <DataField>OrderNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="CustID">
+          <DataField>CustID</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="CommercialSize1">
+          <DataField>CommercialSize1</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="CommercialSize2">
+          <DataField>CommercialSize2</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="UD_Size_c">
+          <DataField>UD_Size_c</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="ISOrigCountry">
+          <DataField>ISOrigCountry</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="UPCCode1">
+          <DataField>UPCCode1</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="UPCCode2">
+          <DataField>UPCCode2</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="UPCCode3">
+          <DataField>UPCCode3</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="UD_CatalogNumber_c">
+          <DataField>UD_CatalogNumber_c</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="OrderDate">
+          <DataField>OrderDate</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="CommodityCode">
+          <DataField>CommodityCode</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Commodity_Description">
+          <DataField>Commodity_Description</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Country_ISOrigCountry">
+          <DataField>Country_ISOrigCountry</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Discount">
+          <DataField>Discount</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="DocTaxAmt">
+          <DataField>DocTaxAmt</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Percentage">
+          <DataField>Percentage</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Type">
+          <DataField>Type</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="MisChrg_Description">
+          <DataField>MisChrg_Description</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="MisChrg_TypeSubtotal_c">
+          <DataField>MisChrg_TypeSubtotal_c</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Gross">
+          <Value>=Fields!SellingShipQty.Value * Fields!Calc_UnitPrice.Value</Value>
+        </Field>
+        <Field Name="TotalMiscChrg">
+          <DataField>TotalMiscChrg</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="TD_TotalMiscChrg">
+          <DataField>TD_TotalMiscChrg</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="TD_TotalPerc">
+          <DataField>TD_TotalPerc</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="TC_TotalPerc">
+          <DataField>TC_TotalPerc</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="TC_TotalMiscChrg">
+          <DataField>TC_TotalMiscChrg</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="Company">
+      <Query>
+        <DataSourceName>dsARForm</DataSourceName>
+        <CommandText>
+          ="SELECT T1.FaxNum,T1.PhoneNum,T1.StateTaxID,T1.Calc_usePreNumberFmt,T1.Calc_Localization, T1.Calc_UseCopyNum, T1.Calc_ExecutionTime, T1.Calc_PLWasteRegisterNum
+          FROM Company_" + Parameters!TableGuid.Value + " T1"
+        </CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="FaxNum">
+          <DataField>FaxNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PhoneNum">
+          <DataField>PhoneNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_usePreNumberFmt">
+          <DataField>Calc_usePreNumberFmt</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
+        </Field>
+        <Field Name="StateTaxID">
+          <DataField>StateTaxID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_Localization">
+          <DataField>Calc_Localization</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Calc_UseCopyNum">
+          <DataField>Calc_UseCopyNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_ExecutionTime">
+          <DataField>Calc_ExecutionTime</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_PLWasteRegisterNum">
+          <DataField>Calc_PLWasteRegisterNum</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="RptParameter">
+      <Query>
+        <DataSourceName>dsARForm</DataSourceName>
+        <CommandText>="SELECT CAST( T1.DecimalsQuantity as nvarchar ) as DecimalsQuantity, DecimalsPrice, T1.PrintInventoryAttributes
+          FROM RptParameter_" + Parameters!TableGuid.Value + " T1"</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="DecimalsQuantity">
+          <DataField>DecimalsQuantity</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PrintInventoryAttributes">
+          <DataField>PrintInventoryAttributes</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ReportImages">
+      <Query>
+        <DataSourceName>dsARForm</DataSourceName>
+        <CommandText>="IF (EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ReportImages_" + Parameters!TableGuid.Value + "')) BEGIN    SELECT * FROM ReportImages_" + Parameters!TableGuid.Value + " END ELSE BEGIN SELECT 1 WHERE 1 = 0 END"</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Logo">
+          <DataField>Logo</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="LogoMimeType">
+          <DataField>LogoMimeType</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="dsTerms">
+      <Query>
+        <DataSourceName>dsARForm</DataSourceName>
+        <CommandText>="SELECT 
+T1.Company,
+T1.InvoiceDate,
+T1.InvoiceNum,
+T1.InvoiceType,
+T1.Calc_SalesTerms,
+T2.NumberOfDays,
+T2.NumberOfMonths,
+T2.DueOnDay,
+ISNULL(T2.DiscountPercent, 0) AS DiscountPercent,
+T1.TermsCode_DiscountType,  
+CASE 
+    WHEN T1.TermsCode_DiscountType = 'D' 
+        THEN DATEADD(DAY, T2.NumberOfDays, T1.InvoiceDate) 
+    ELSE  
+        DATEADD(DAY, T2.DueOnDay, DATEADD(MONTH, T2.NumberOfMonths, T1.InvoiceDate)) 
+END AS Terms_DueDate  
+FROM InvcHead_" + Parameters!TableGuid.Value + " T1 
+LEFT OUTER JOIN TermsDtl_" + Parameters!TableGuid.Value + " T2
+    ON T1.Company = T2.Company AND T1.TermsCode = T2.TermsCode"</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Company">
+          <DataField>Company</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="InvoiceNum">
+          <DataField>InvoiceNum</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Calc_SalesTerms">
+          <DataField>Calc_SalesTerms</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="DiscountPercent">
+          <DataField>DiscountPercent</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Terms_DueDate">
+          <DataField>Terms_DueDate</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <Height>7.51097in</Height>
+        <Style />
+      </Body>
+      <Width>7.705in</Width>
+      <Page>
+        <PageHeader>
+          <Height>0.70417in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <Style>
+            <Border />
+          </Style>
+        </PageHeader>
+        <PageFooter>
+          <Height>0.89056in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <Style />
+        </PageFooter>
+        <InteractiveHeight>11in</InteractiveHeight>
+        <InteractiveWidth>8.5in</InteractiveWidth>
+        <LeftMargin>0.25in</LeftMargin>
+        <RightMargin>0.25in</RightMargin>
+        <TopMargin>0.01in</TopMargin>
+        <BottomMargin>0.13in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="TableGuid">
+      <DataType>String</DataType>
+      <Prompt>TableGuid</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>1</NumberOfColumns>
+      <NumberOfRows>1</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>TableGuid</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <Code>
+    Private Shared _hashtable As New System.Collections.Hashtable()
+
+    Public Function SetVarInvoiceNum(InvNum as Integer, InvDate as Date, VoucherString as String, CreditMemo as Boolean,p_RptLiteralsLPhone as String,p_RptLiteralsLFax as String,p_RptLiteralsLof as String,p_RptLiteralsLPage as String,p_RptLiteralsLHdng as String,p_Label_Calc_CreditMemo as String,p_RptLiteralsLInvoice as String,p_RptLiteralsLDate as String,p_RptLiteralsLVatNr as String, IsDraftCopy as Boolean, DocCopyNum as Integer, FirstPrintDate as Date, Posted as Boolean, DocumentPrinted as Boolean, p_Label_Calc_PLWasteRegisterNum as String, p_Label_Calc_CompanyEORINumber as String, p_Calc_CompanyEORINumber as String,p_RptLiteralsLPrintedAt as String) as String
+    If (InvNum &lt;&gt; 0) then
+    SetValue("varInvoiceNum", CObj(InvNum))
+    If (Posted And DocumentPrinted) Then
+    SetValue("varDocCopyNum", CObj(DocCopyNum + 1))
+    Else
+    SetValue("varDocCopyNum", CObj(DocCopyNum))
+    End If
+    SetValue("varInvoiceDate", CObj(InvDate))
+    SetValue("varFirstPrintDate", CObj(FirstPrintDate))
+    SetValue("boolCreditMemo", CObj(CreditMemo))
+    SetValue("isDraftCopy", CObj(IsDraftCopy))
+    SetValue("varCalc_Voucher_String", CObj(VoucherString))
+    SetValue("RptLiteralsLPhone", CObj(p_RptLiteralsLPhone))
+    SetValue("RptLiteralsLFax", CObj(p_RptLiteralsLFax))
+    SetValue("RptLiteralsLof", CObj(p_RptLiteralsLof))
+    SetValue("RptLiteralsLPage", CObj(p_RptLiteralsLPage))
+    SetValue("RptLiteralsLHdng", CObj(p_RptLiteralsLHdng))
+    SetValue("Label_Calc_CreditMemo", CObj(p_Label_Calc_CreditMemo))
+    SetValue("RptLiteralsLInvoice", CObj(p_RptLiteralsLInvoice))
+    SetValue("RptLiteralsLDate", CObj(p_RptLiteralsLDate))
+    SetValue("RptLiteralsLVatNr", CObj(p_RptLiteralsLVatNr))
+    SetValue("Label_Calc_PLWasteRegisterNum",CObj(p_Label_Calc_PLWasteRegisterNum))
+    SetValue("Label_Calc_CompanyEORINumber",CObj(p_Label_Calc_CompanyEORINumber))
+    SetValue("Calc_CompanyEORINumber",CObj(p_Calc_CompanyEORINumber))
+    SetValue("RptLiteralsLPrintedAt", CObj(p_RptLiteralsLPrintedAt))
+    End if
+    Return ""
+    End Function
+
+    Public Function SetValue(ByVal id as String, ByVal value As Object) As Object
+    SyncLock _hashtable.SyncRoot
+    dim Key as String = id &amp; Report.Parameters!TableGuid.Value
+    _hashtable(Key) = value
+    End SyncLock
+    End Function
+
+    Public Function GetValue(ByVal id as String) As Object
+    SyncLock _hashtable.SyncRoot
+    dim Key as String = id &amp; Report.Parameters!TableGuid.Value
+    Return _hashtable(Key )
+    End SyncLock
+    End Function
+
+    Public Function GetShipTo( Index as Integer, ShipToList() as String ) as String
+    If ShipToList.Length &gt; Index
+    Return ShipToList(Index)
+    Else
+    Return ""
+    End If
+    End Function
+  </Code>
+  <EmbeddedImages>
+    <EmbeddedImage Name="Screenshot20250617122247">
+      <MIMEType>image/png</MIMEType>
+      <ImageData>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</ImageData>
+    </EmbeddedImage>
+  </EmbeddedImages>
+  <Language>=User!Language</Language>
+  <CodeModules>
+    <CodeModule>CLSEpicor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</CodeModule>
+  </CodeModules>
+  <Classes>
+    <Class>
+      <ClassName>CLSEpicor.ReportFunctions.ARForm</ClassName>
+      <InstanceName>obj</InstanceName>
+    </Class>
+  </Classes>
+  <ConsumeContainerWhitespace>true</ConsumeContainerWhitespace>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>2178b8dc-80e7-45ff-add9-292f7eba78b3</rd:ReportID>
+</Report>
