@@ -103,10 +103,10 @@ export class PDFParser {
     const sections: PDFSection[] = [];
     const tables: PDFTable[] = [];
 
-    // Define header area (top 20% of page based on your yellow highlight)
+    // Define header area (top 20% of page)
     const headerThreshold = pageHeight * 0.2;
     
-    // Define body area (middle section based on your orange highlight)
+    // Define body area (middle section - but only for table detection)
     const bodyStartThreshold = pageHeight * 0.2;
     const bodyEndThreshold = pageHeight * 0.8;
 
@@ -115,9 +115,8 @@ export class PDFParser {
     const bodyItems = textItems.filter(item => 
       item.y > bodyStartThreshold && item.y <= bodyEndThreshold
     );
-    const footerItems = textItems.filter(item => item.y > bodyEndThreshold);
 
-    // Create header section
+    // Create header section - only identify header components
     if (headerItems.length > 0) {
       sections.push({
         type: 'header',
@@ -126,28 +125,43 @@ export class PDFParser {
       });
     }
 
-    // Create body section and detect tables
+    // For body section, only detect table structures
+    // Individual text items should only be included if they're part of a table
     if (bodyItems.length > 0) {
-      sections.push({
-        type: 'body',
-        items: bodyItems,
-        boundingBox: this.calculateBoundingBox(bodyItems)
-      });
-
-      // Detect table structure in body items
       const detectedTable = this.detectTableStructure(bodyItems);
       if (detectedTable) {
         tables.push(detectedTable);
-      }
-    }
+        
+        // Only create body section if we have a valid table
+        // Body items are limited to table cells only
+        const tableTextItems = detectedTable.cells.map(cell => ({
+          text: cell.text,
+          x: cell.x,
+          y: cell.y,
+          width: cell.width,
+          height: cell.height,
+          fontSize: 12, // Default font size for table cells
+          fontFamily: 'Arial' // Default font family
+        }));
 
-    // Create footer section
-    if (footerItems.length > 0) {
-      sections.push({
-        type: 'footer',
-        items: footerItems,
-        boundingBox: this.calculateBoundingBox(footerItems)
-      });
+        sections.push({
+          type: 'body',
+          items: tableTextItems,
+          boundingBox: detectedTable.boundingBox
+        });
+      } else {
+        // Create empty body section to reserve space
+        sections.push({
+          type: 'body',
+          items: [],
+          boundingBox: {
+            x: 0,
+            y: bodyStartThreshold,
+            width: pageWidth,
+            height: bodyEndThreshold - bodyStartThreshold
+          }
+        });
+      }
     }
 
     return { sections, tables };
