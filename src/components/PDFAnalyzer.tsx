@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database } from "lucide-react";
 import { PDFParser, PDFAnalysisResult as PDFParserResult } from "@/utils/PDFParser";
 import { RDLGenerator } from "@/utils/RDLGenerator";
+import { RDLHeaderGenerator, HeaderTextbox } from "@/utils/RDLHeaderGenerator";
 
 interface PDFComponent {
   id: string;
@@ -45,6 +46,8 @@ interface AnalysisResult {
 export const PDFAnalyzer = () => {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [baseRDLFile, setBaseRDLFile] = useState<File | null>(null);
+  const [baseRDLContent, setBaseRDLContent] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -66,6 +69,33 @@ export const PDFAnalyzer = () => {
       toast({
         title: "Invalid File",
         description: "Please select a valid PDF file",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const handleBaseRDLSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && (file.name.endsWith('.rdl') || file.type === 'text/xml' || file.type === 'application/xml')) {
+      try {
+        const content = await file.text();
+        setBaseRDLFile(file);
+        setBaseRDLContent(content);
+        toast({
+          title: "Base RDL Loaded",
+          description: `Ready to use: ${file.name}`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error Reading RDL",
+          description: "Failed to read the RDL file content",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please select a valid RDL file",
         variant: "destructive",
       });
     }
@@ -302,6 +332,55 @@ export const PDFAnalyzer = () => {
     });
   };
 
+  const generateExecutableRDL = () => {
+    if (!analysisResult || !baseRDLContent) {
+      toast({
+        title: "Missing Requirements",
+        description: "Please upload both PDF and base RDL files",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Convert PDF header components to RDL textboxes
+      const headerTextboxes = RDLHeaderGenerator.convertPDFComponentsToHeaderTextboxes(analysisResult.components);
+      
+      // Generate executable RDL with updated header
+      const executableRDL = RDLHeaderGenerator.generateExecutableRDL(baseRDLContent, headerTextboxes);
+      
+      return executableRDL;
+    } catch (error) {
+      console.error('Error generating executable RDL:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate executable RDL. Please check your base RDL file.",
+        variant: "destructive",
+      });
+      return '';
+    }
+  };
+
+  const downloadExecutableRDL = () => {
+    const rdlContent = generateExecutableRDL();
+    if (!rdlContent) return;
+    
+    const blob = new Blob([rdlContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedFile?.name.replace('.pdf', '')}_executable.rdl`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Executable RDL Downloaded",
+      description: "Executable RDL with updated header ready for deployment",
+    });
+  };
+
   const getComponentIcon = (type: string) => {
     switch (type) {
       case 'textbox': return <Type className="w-4 h-4" />;
@@ -359,41 +438,94 @@ export const PDFAnalyzer = () => {
         </TabsList>
 
         <TabsContent value="upload" className="space-y-6">
-          <Card className="p-8 bg-gradient-card shadow-card border border-primary/20">
-            <div className="text-center space-y-4">
-              <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 hover:border-primary/50 transition-colors">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 bg-primary/10 rounded-full">
-                    <Upload className="w-8 h-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Upload PDF Report Design</h3>
-                    <p className="text-muted-foreground">
-                      Select a PDF file containing your invoice or report layout
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="pdf-upload"
-                  />
-                  <label htmlFor="pdf-upload" className="cursor-pointer">
-                    <Button variant="hero" asChild>
-                      <span>Choose PDF File</span>
-                    </Button>
-                  </label>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileText className="w-4 h-4" />
-                      {selectedFile.name}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6 bg-gradient-card shadow-card border border-primary/20">
+              <div className="text-center space-y-4">
+                <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 hover:border-primary/50 transition-colors">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-full">
+                      <Upload className="w-6 h-6 text-primary" />
                     </div>
-                  )}
+                    <div>
+                      <h3 className="text-lg font-semibold">Upload PDF Report Design</h3>
+                      <p className="text-muted-foreground text-sm">
+                        Select a PDF file containing your report layout
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="pdf-upload"
+                    />
+                    <label htmlFor="pdf-upload" className="cursor-pointer">
+                      <Button variant="hero" asChild>
+                        <span>Choose PDF File</span>
+                      </Button>
+                    </label>
+                    {selectedFile && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileText className="w-4 h-4" />
+                        {selectedFile.name}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              {selectedFile && (
+            </Card>
+
+            <Card className="p-6 bg-gradient-card shadow-card border border-secondary/20">
+              <div className="text-center space-y-4">
+                <div className="border-2 border-dashed border-secondary/30 rounded-lg p-6 hover:border-secondary/50 transition-colors">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-3 bg-secondary/10 rounded-full">
+                      <Database className="w-6 h-6 text-secondary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Upload Base RDL File</h3>
+                      <p className="text-muted-foreground text-sm">
+                        Select an RDL file with configured data sources
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".rdl,.xml"
+                      onChange={handleBaseRDLSelect}
+                      className="hidden"
+                      id="rdl-upload"
+                    />
+                    <label htmlFor="rdl-upload" className="cursor-pointer">
+                      <Button variant="secondary" asChild>
+                        <span>Choose RDL File</span>
+                      </Button>
+                    </label>
+                    {baseRDLFile && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Database className="w-4 h-4" />
+                        {baseRDLFile.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+          
+          {selectedFile && baseRDLFile && (
+            <Card className="p-6 bg-gradient-card shadow-card">
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Ready to Generate Executable RDL</h3>
+                    <p className="text-muted-foreground">
+                      Both PDF and base RDL files are uploaded. Analyze PDF to proceed.
+                    </p>
+                  </div>
+                </div>
                 <Button 
                   onClick={analyzePDF} 
                   disabled={isAnalyzing}
@@ -403,9 +535,9 @@ export const PDFAnalyzer = () => {
                 >
                   {isAnalyzing ? "Analyzing..." : "Analyze PDF"}
                 </Button>
-              )}
-            </div>
-          </Card>
+              </div>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="analysis" className="space-y-6">
@@ -547,6 +679,70 @@ export const PDFAnalyzer = () => {
         <TabsContent value="rdl" className="space-y-6">
           {analysisResult && (
             <>
+              {baseRDLContent ? (
+                <Card className="p-6 bg-gradient-card shadow-card border border-green-500/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <Database className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Executable RDL Generator</h3>
+                        <p className="text-muted-foreground">
+                          Generate executable RDL with updated header from your base RDL file
+                        </p>
+                      </div>
+                    </div>
+                    <Button onClick={downloadExecutableRDL} variant="default" size="lg">
+                      <Download className="w-4 h-4" />
+                      Download Executable RDL
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Executable RDL Features:</h4>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                          Preserves existing data sources
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                          Updates header with PDF layout
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                          Comments out body for R&D
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                          Ready for immediate deployment
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                          Maintains proper XML structure
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Header Components Found:</h4>
+                      <div className="space-y-2">
+                        {analysisResult.sections.header.map((component, index) => (
+                          <div key={component.id} className="text-sm bg-muted/50 p-2 rounded">
+                            <span className="font-medium">Textbox{index + 1}:</span> {component.content || 'Header Text'}
+                          </div>
+                        ))}
+                        {analysisResult.sections.header.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No header components detected</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ) : null}
+
               <Card className="p-6 bg-gradient-card shadow-card">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
