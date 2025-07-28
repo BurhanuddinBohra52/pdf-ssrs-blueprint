@@ -11,27 +11,28 @@ export interface HeaderTextbox {
 
 export class RDLHeaderGenerator {
   static updateHeaderInRDL(baseRDLContent: string, headerComponents: HeaderTextbox[]): string {
-    // Parse the base RDL and find the PageHeader section
-    const headerMatch = baseRDLContent.match(/<ns0:PageHeader>([\s\S]*?)<\/ns0:PageHeader>/);
+    // Generate complete PageHeader structure based on analyzed PDF components
+    const newHeaderContent = this.generateCompletePageHeader(headerComponents);
     
-    if (!headerMatch) {
-      throw new Error("PageHeader section not found in base RDL");
-    }
-
-    // Generate new header textboxes based on analyzed PDF components
-    const newHeaderContent = this.generateHeaderReportItems(headerComponents);
-    
-    // Replace the ReportItems section within PageHeader
-    const updatedHeaderSection = headerMatch[0].replace(
-      /<ns0:ReportItems>([\s\S]*?)<\/ns0:ReportItems>/,
-      `<ns0:ReportItems>${newHeaderContent}</ns0:ReportItems>`
-    );
-
     // Replace the entire PageHeader section in the RDL
     return baseRDLContent.replace(
       /<ns0:PageHeader>([\s\S]*?)<\/ns0:PageHeader>/,
-      updatedHeaderSection
+      newHeaderContent
     );
+  }
+
+  private static generateCompletePageHeader(headerComponents: HeaderTextbox[]): string {
+    const reportItems = this.generateHeaderReportItems(headerComponents);
+    return `<ns0:PageHeader>
+          <ns0:Height>0.70417in</ns0:Height>
+          <ns0:PrintOnFirstPage>true</ns0:PrintOnFirstPage>
+          <ns0:PrintOnLastPage>true</ns0:PrintOnLastPage>
+          <ns0:ReportItems>${reportItems}
+          </ns0:ReportItems>
+          <ns0:Style>
+            <ns0:Border />
+          </ns0:Style>
+        </ns0:PageHeader>`;
   }
 
   private static generateHeaderReportItems(headerComponents: HeaderTextbox[]): string {
@@ -44,10 +45,7 @@ export class RDLHeaderGenerator {
                   <ns0:TextRuns>
                     <ns0:TextRun>
                       <ns0:Value>${this.escapeXML(component.value)}</ns0:Value>
-                      <ns0:Style>
-                        ${component.fontSize ? `<ns0:FontSize>${component.fontSize}</ns0:FontSize>` : ''}
-                        ${component.fontFamily ? `<ns0:FontFamily>${component.fontFamily}</ns0:FontFamily>` : ''}
-                      </ns0:Style>
+                      <ns0:Style />
                     </ns0:TextRun>
                   </ns0:TextRuns>
                   <ns0:Style />
