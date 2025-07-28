@@ -68,11 +68,18 @@ export class RDLHeaderGenerator {
             </ns0:Textbox>`).join('');
   }
 
-
   static convertPDFComponentsToHeaderTextboxes(pdfComponents: any[]): HeaderTextbox[] {
     // Filter only header components and convert them to textboxes with better positioning
+    // Exclude components with generic "Header Text" content or empty/placeholder content
     return pdfComponents
-      .filter(component => component.section === 'header' && component.type === 'textbox')
+      .filter(component => 
+        component.section === 'header' && 
+        component.type === 'textbox' &&
+        component.content && // Must have content
+        component.content.trim() !== '' && // Content must not be empty
+        component.content.trim().toLowerCase() !== 'header text' && // Exclude generic "Header Text"
+        !component.content.trim().match(/^header\s*text$/i) // Case-insensitive match for variations
+      )
       .map((component, index) => ({
         name: `Textbox${index + 1}`,
         value: component.content || 'Header Text',
