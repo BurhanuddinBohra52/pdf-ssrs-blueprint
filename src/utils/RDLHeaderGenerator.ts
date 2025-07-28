@@ -68,32 +68,18 @@ export class RDLHeaderGenerator {
             </ns0:Textbox>`).join('');
   }
 
-  static commentOutBodySection(rdlContent: string): string {
-    // Find and comment out the Body section
-    const bodyMatch = rdlContent.match(/(<ns0:Body>[\s\S]*?<\/ns0:Body>)/);
-    
-    if (bodyMatch) {
-      const commentedBody = `<!-- Body section commented out for further R&D
-${bodyMatch[1]}
--->`;
-      
-      return rdlContent.replace(bodyMatch[1], commentedBody);
-    }
-    
-    return rdlContent;
-  }
 
   static convertPDFComponentsToHeaderTextboxes(pdfComponents: any[]): HeaderTextbox[] {
-    // Filter only header components and convert them to textboxes
+    // Filter only header components and convert them to textboxes with better positioning
     return pdfComponents
       .filter(component => component.section === 'header' && component.type === 'textbox')
       .map((component, index) => ({
-        name: `HeaderTextbox${index + 1}`,
+        name: `Textbox${index + 1}`,
         value: component.content || 'Header Text',
-        top: `${(component.y / 72).toFixed(2)}in`, // Convert points to inches
-        left: `${(component.x / 72).toFixed(2)}in`,
-        width: `${(component.width / 72).toFixed(2)}in`,
-        height: `${(component.height / 72).toFixed(2)}in`,
+        top: `${Math.max(0, (component.y / 72)).toFixed(4)}in`, // Convert points to inches with better precision
+        left: `${Math.max(0, (component.x / 72)).toFixed(4)}in`,
+        width: `${Math.max(0.5, (component.width / 72)).toFixed(4)}in`, // Minimum width
+        height: `${Math.max(0.25, (component.height / 72)).toFixed(4)}in`, // Minimum height
         fontSize: component.styles?.fontSize ? `${component.styles.fontSize}pt` : '10pt',
         fontFamily: component.styles?.fontFamily || 'Arial'
       }));
@@ -112,10 +98,7 @@ ${bodyMatch[1]}
     // Step 1: Update header with new components
     let updatedRDL = this.updateHeaderInRDL(baseRDLContent, headerComponents);
     
-    // Step 2: Comment out body section for now
-    updatedRDL = this.commentOutBodySection(updatedRDL);
-    
-    // Step 3: Ensure proper XML formatting and namespaces
+    // Step 2: Ensure proper XML formatting and namespaces
     updatedRDL = this.ensureProperNamespaces(updatedRDL);
     
     return updatedRDL;
