@@ -7,6 +7,11 @@ export interface HeaderTextbox {
   height: string;
   fontSize?: string;
   fontFamily?: string;
+  fontWeight?: string;
+  color?: string;
+  isItalic?: boolean;
+  type?: 'static-label' | 'dynamic-data' | 'standalone-text';
+  confidence?: number;
 }
 
 export class RDLHeaderGenerator {
@@ -44,9 +49,15 @@ export class RDLHeaderGenerator {
                 <ns0:Paragraph>
                   <ns0:TextRuns>
                     <ns0:TextRun>
-                      <ns0:Value>${this.escapeXML(component.value)}</ns0:Value>
-                      <ns0:Style />
-                    </ns0:TextRun>
+                       <ns0:Value>${this.escapeXML(component.value)}</ns0:Value>
+                       <ns0:Style>
+                         ${component.fontFamily ? `<ns0:FontFamily>${component.fontFamily}</ns0:FontFamily>` : ''}
+                         ${component.fontSize ? `<ns0:FontSize>${component.fontSize}</ns0:FontSize>` : ''}
+                         ${component.fontWeight ? `<ns0:FontWeight>${component.fontWeight}</ns0:FontWeight>` : ''}
+                         ${component.isItalic ? `<ns0:FontStyle>Italic</ns0:FontStyle>` : ''}
+                         ${component.color ? `<ns0:Color>${component.color}</ns0:Color>` : ''}
+                       </ns0:Style>
+                     </ns0:TextRun>
                   </ns0:TextRuns>
                   <ns0:Style />
                 </ns0:Paragraph>
@@ -69,27 +80,44 @@ export class RDLHeaderGenerator {
   }
 
   static convertPDFComponentsToHeaderTextboxes(pdfComponents: any[]): HeaderTextbox[] {
-    // Filter only header components and convert them to textboxes with better positioning
-    // Exclude components with generic "Header Text" content or empty/placeholder content
+    // Enhanced conversion supporting smart header analysis results
     return pdfComponents
       .filter(component => 
-        component.section === 'header' && 
-        component.type === 'textbox' &&
-        component.content && // Must have content
-        component.content.trim() !== '' && // Content must not be empty
-        component.content.trim().toLowerCase() !== 'header text' && // Exclude generic "Header Text"
-        !component.content.trim().match(/^header\s*text$/i) // Case-insensitive match for variations
+        component.text && // Must have text content
+        component.text.trim() !== '' && // Content must not be empty
+        component.text.trim().toLowerCase() !== 'header text' && // Exclude generic "Header Text"
+        !component.text.trim().match(/^header\s*text$/i) // Case-insensitive match for variations
       )
       .map((component, index) => ({
-        name: `Textbox${index + 1}`,
-        value: component.content || 'Header Text',
-        top: `${Math.max(0, (component.y / 72)).toFixed(4)}in`, // Convert points to inches with better precision
+        name: component.type === 'static-label' 
+          ? `Label_${component.text.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}_${index + 1}`
+          : component.type === 'dynamic-data'
+          ? `Data_${index + 1}`
+          : `Text_${index + 1}`,
+        value: component.text || component.content || 'Header Text',
+        top: `${Math.max(0, (component.y / 72)).toFixed(4)}in`,
         left: `${Math.max(0, (component.x / 72)).toFixed(4)}in`,
-        width: `${Math.max(0.5, (component.width / 72)).toFixed(4)}in`, // Minimum width
-        height: `${Math.max(0.25, (component.height / 72)).toFixed(4)}in`, // Minimum height
-        fontSize: component.styles?.fontSize ? `${component.styles.fontSize}pt` : '10pt',
-        fontFamily: component.styles?.fontFamily || 'Arial'
+        width: `${Math.max(0.5, (component.width / 72)).toFixed(4)}in`,
+        height: `${Math.max(0.25, (component.height || component.fontSize || 12) / 72).toFixed(4)}in`,
+        fontSize: `${component.fontSize || 10}pt`,
+        fontFamily: component.fontFamily || 'Arial',
+        fontWeight: component.fontWeight || 'normal',
+        color: component.color || '#000000',
+        isItalic: component.isItalic || false,
+        type: component.type || 'standalone-text',
+        confidence: component.confidence || 0.5
       }));
+  }
+
+  static convertEnhancedHeaderAnalysis(headerAnalysis: any): HeaderTextbox[] {
+    // Convert enhanced header analysis to textboxes
+    const allComponents = [
+      ...headerAnalysis.staticLabels,
+      ...headerAnalysis.dynamicData,
+      ...headerAnalysis.standaloneText
+    ];
+    
+    return this.convertPDFComponentsToHeaderTextboxes(allComponents);
   }
 
   private static escapeXML(text: string): string {

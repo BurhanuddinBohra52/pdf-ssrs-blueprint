@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database } from "lucide-react";
 import { PDFParser, PDFAnalysisResult as PDFParserResult } from "@/utils/PDFParser";
+import { EnhancedPDFParser } from "@/utils/EnhancedPDFParser";
 import { RDLGenerator } from "@/utils/RDLGenerator";
 import { RDLHeaderGenerator, HeaderTextbox } from "@/utils/RDLHeaderGenerator";
 
@@ -51,6 +52,7 @@ export const PDFAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [enhancedAnalysis, setEnhancedAnalysis] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,30 +111,40 @@ export const PDFAnalyzer = () => {
     setActiveTab("analysis");
 
     try {
-      // Step 1: Parse PDF using JavaScript PDF parser
+      // Step 1: Enhanced PDF analysis with smart header detection
       setProgress(20);
-      console.log('Starting PDF analysis for:', selectedFile.name);
+      console.log('Starting enhanced PDF analysis for:', selectedFile.name);
       
+      const enhancedResult = await EnhancedPDFParser.parsePDF(selectedFile);
+      setProgress(40);
+      
+      console.log('Enhanced Analysis Result:', enhancedResult);
+      console.log('Header analysis:', enhancedResult.headerAnalysis);
+      console.log('Static labels:', enhancedResult.headerAnalysis.staticLabels.length);
+      console.log('Dynamic data:', enhancedResult.headerAnalysis.dynamicData.length);
+      console.log('Label-data pairs:', enhancedResult.headerAnalysis.labelDataPairs.length);
+      
+      // Step 2: Legacy analysis for compatibility
       const pdfAnalysis = await PDFParser.parsePDF(selectedFile);
-      setProgress(50);
+      setProgress(70);
       
-      console.log('PDF Analysis Result:', pdfAnalysis);
-      console.log('Found sections:', pdfAnalysis.sections.length);
-      console.log('Found tables:', pdfAnalysis.tables.length);
-      console.log('Total text items:', pdfAnalysis.allTextItems.length);
-      
-      // Step 2: Convert real PDF analysis to our component format
-      setProgress(80);
+      // Step 3: Convert to component format
       const analysisResult = convertPDFAnalysisToComponents(pdfAnalysis);
-      
-      setProgress(100);
+      setProgress(90);
       
       setAnalysisResult(analysisResult);
+      setEnhancedAnalysis(enhancedResult);
+      setProgress(100);
       setActiveTab("results");
       
+      const headerComponentsCount = enhancedResult.headerAnalysis.staticLabels.length + 
+                                   enhancedResult.headerAnalysis.dynamicData.length + 
+                                   enhancedResult.headerAnalysis.standaloneText.length;
+      const pairsCount = enhancedResult.headerAnalysis.labelDataPairs.length;
+      
       toast({
-        title: "Analysis Complete",
-        description: `Found ${analysisResult.components.length} components across ${analysisResult.pages} page(s)`,
+        title: "Smart Analysis Complete",
+        description: `Found ${headerComponentsCount} header components and ${pairsCount} label-data pairs`,
       });
     } catch (error) {
       console.error('PDF Analysis Error:', error);
@@ -333,7 +345,7 @@ export const PDFAnalyzer = () => {
   };
 
   const generateExecutableRDL = () => {
-    if (!analysisResult || !baseRDLContent) {
+    if ((!analysisResult && !enhancedAnalysis) || !baseRDLContent) {
       toast({
         title: "Missing Requirements",
         description: "Please upload both PDF and base RDL files",
@@ -343,8 +355,15 @@ export const PDFAnalyzer = () => {
     }
 
     try {
-      // Convert PDF header components to RDL textboxes
-      const headerTextboxes = RDLHeaderGenerator.convertPDFComponentsToHeaderTextboxes(analysisResult.components);
+      let headerTextboxes;
+      
+      // Use enhanced analysis if available for better results
+      if (enhancedAnalysis) {
+        headerTextboxes = RDLHeaderGenerator.convertEnhancedHeaderAnalysis(enhancedAnalysis.headerAnalysis);
+        console.log('Using enhanced header analysis:', headerTextboxes);
+      } else {
+        headerTextboxes = RDLHeaderGenerator.convertPDFComponentsToHeaderTextboxes(analysisResult.components);
+      }
       
       // Generate executable RDL with updated header
       const executableRDL = RDLHeaderGenerator.generateExecutableRDL(baseRDLContent, headerTextboxes);
@@ -571,51 +590,183 @@ export const PDFAnalyzer = () => {
         </TabsContent>
 
         <TabsContent value="results" className="space-y-6">
-          {analysisResult && (
+          {(analysisResult || enhancedAnalysis) && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="p-6 bg-gradient-card shadow-card">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                      <Layers className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Header Components</h3>
-                      <p className="text-2xl font-bold text-primary">
-                        {analysisResult.sections.header.length}
-                      </p>
-                    </div>
+              {enhancedAnalysis && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <Card className="p-6 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                          <Type className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Static Labels</h3>
+                          <p className="text-2xl font-bold text-primary">
+                            {enhancedAnalysis.headerAnalysis.staticLabels.length}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-6 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500/10 rounded-lg">
+                          <Database className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Dynamic Data</h3>
+                          <p className="text-2xl font-bold text-primary">
+                            {enhancedAnalysis.headerAnalysis.dynamicData.length}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-6 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                          <MapPin className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Label-Data Pairs</h3>
+                          <p className="text-2xl font-bold text-primary">
+                            {enhancedAnalysis.headerAnalysis.labelDataPairs.length}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-6 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-500/10 rounded-lg">
+                          <FileText className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Standalone Text</h3>
+                          <p className="text-2xl font-bold text-primary">
+                            {enhancedAnalysis.headerAnalysis.standaloneText.length}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
                   </div>
-                </Card>
-                
-                <Card className="p-6 bg-gradient-card shadow-card">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/10 rounded-lg">
-                      <Grid3X3 className="w-5 h-5 text-green-600" />
+
+                  <Card className="p-6 bg-gradient-card shadow-card">
+                    <h3 className="text-lg font-semibold mb-4">Smart Header Analysis</h3>
+                    
+                    <div className="space-y-6">
+                      {/* Label-Data Pairs */}
+                      {enhancedAnalysis.headerAnalysis.labelDataPairs.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-blue-600 mb-3">Label-Data Pairs Detected</h4>
+                          <div className="space-y-2">
+                            {enhancedAnalysis.headerAnalysis.labelDataPairs.map((pair: any, index: number) => (
+                              <div key={index} className="flex items-center gap-4 p-3 bg-blue-500/5 rounded-lg border border-blue-200/30">
+                                <div className="bg-blue-500/10 px-3 py-1 rounded text-sm font-medium text-blue-700">
+                                  {pair.label.text}
+                                </div>
+                                <div className="text-muted-foreground">→</div>
+                                <div className="bg-green-500/10 px-3 py-1 rounded text-sm text-green-700">
+                                  {pair.data.text}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {pair.label.fontSize}pt, {pair.label.fontFamily}
+                                  {pair.label.fontWeight !== 'normal' && `, ${pair.label.fontWeight}`}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Static Labels */}
+                      {enhancedAnalysis.headerAnalysis.staticLabels.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-purple-600 mb-3">Static Labels</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {enhancedAnalysis.headerAnalysis.staticLabels
+                              .filter((label: any) => !label.pairedWith)
+                              .map((label: any, index: number) => (
+                                <div key={index} className="bg-purple-500/10 px-3 py-2 rounded text-sm text-purple-700">
+                                  <div className="font-medium">{label.text}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {label.fontSize}pt, {label.fontFamily}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Dynamic Data */}
+                      {enhancedAnalysis.headerAnalysis.dynamicData.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-green-600 mb-3">Dynamic Data</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {enhancedAnalysis.headerAnalysis.dynamicData
+                              .filter((data: any) => !data.pairedWith)
+                              .map((data: any, index: number) => (
+                                <div key={index} className="bg-green-500/10 px-3 py-2 rounded text-sm text-green-700">
+                                  <div className="font-medium">{data.text}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {data.fontSize}pt, {data.fontFamily}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-semibold">Body Components</h3>
-                      <p className="text-2xl font-bold text-primary">
-                        {analysisResult.sections.body.length}
-                      </p>
+                  </Card>
+                </>
+              )}
+
+              {analysisResult && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Layers className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Header Components</h3>
+                        <p className="text-2xl font-bold text-primary">
+                          {analysisResult.sections.header.length}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-                
-                <Card className="p-6 bg-gradient-card shadow-card">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-500/10 rounded-lg">
-                      <MapPin className="w-5 h-5 text-purple-600" />
+                  </Card>
+                  
+                  <Card className="p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <Grid3X3 className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Body Components</h3>
+                        <p className="text-2xl font-bold text-primary">
+                          {analysisResult.sections.body.length}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold">Footer Components</h3>
-                      <p className="text-2xl font-bold text-primary">
-                        {analysisResult.sections.footer.length}
-                      </p>
+                  </Card>
+                  
+                  <Card className="p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-500/10 rounded-lg">
+                        <MapPin className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Footer Components</h3>
+                        <p className="text-2xl font-bold text-primary">
+                          {analysisResult.sections.footer.length}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              </div>
+                  </Card>
+                </div>
+              )}
 
               <Card className="p-6 bg-gradient-card shadow-card">
                 <div className="flex items-center justify-between mb-4">
