@@ -59,7 +59,7 @@ export class RDLHeaderGenerator {
                        <ns0:Style>
                          <ns0:FontFamily>${component.fontFamily || 'Arial'}</ns0:FontFamily>
                          <ns0:FontSize>${component.fontSize || '10pt'}</ns0:FontSize>
-                         <ns0:FontWeight>${component.fontWeight || 'Normal'}</ns0:FontWeight>
+                         <ns0:FontWeight>${this.normalizeFontWeight(component.fontWeight || 'Normal')}</ns0:FontWeight>
                          ${component.isItalic ? '<ns0:FontStyle>Italic</ns0:FontStyle>' : ''}
                          <ns0:Color>${component.color || '#000000'}</ns0:Color>
                        </ns0:Style>
@@ -107,7 +107,7 @@ export class RDLHeaderGenerator {
         height: `${Math.max(0.25, (component.height || component.fontSize || 12) / 72).toFixed(4)}in`,
         fontSize: `${component.fontSize || 10}pt`,
         fontFamily: component.fontFamily || 'Arial',
-        fontWeight: component.fontWeight || 'normal',
+        fontWeight: this.normalizeFontWeight(component.fontWeight || 'Normal'),
         color: component.color || '#000000',
         isItalic: component.isItalic || false,
         type: component.type || 'standalone-text',
@@ -124,6 +124,23 @@ export class RDLHeaderGenerator {
     ];
     
     return this.convertPDFComponentsToHeaderTextboxes(allComponents);
+  }
+
+  private static normalizeFontWeight(fontWeight: string): string {
+    // SSRS requires capitalized font weight values
+    const normalized = fontWeight.toLowerCase();
+    switch (normalized) {
+      case 'normal': return 'Normal';
+      case 'bold': return 'Bold';
+      case 'thin': return 'Thin';
+      case 'extralight': return 'ExtraLight';
+      case 'light': return 'Light';
+      case 'medium': return 'Medium';
+      case 'semibold': return 'SemiBold';
+      case 'extrabold': return 'ExtraBold';
+      case 'heavy': return 'Heavy';
+      default: return 'Normal';
+    }
   }
 
   private static escapeXML(text: string): string {
