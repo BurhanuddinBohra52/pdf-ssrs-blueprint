@@ -432,7 +432,7 @@ export class EnhancedPDFParser {
     if (name.includes('bold')) return 'bold';
     if (name.includes('light')) return 'light';
     if (name.includes('medium')) return 'medium';
-    return 'normal';
+    return 'Normal';
   }
 
   private static extractItalicStyle(fontName: string): boolean {
