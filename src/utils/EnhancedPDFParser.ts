@@ -1,4 +1,6 @@
 // Enhanced PDF Parser with smart header detection and label/data recognition
+import { AIPDFAnalyzer, EnhancedPDFComponent } from './AIPDFAnalyzer';
+
 declare global {
   interface Window {
     pdfjsLib: any;
@@ -45,6 +47,8 @@ export interface SmartHeaderAnalysis {
     data: HeaderComponent;
     proximity: number;
   }>;
+  aiEnhanced: boolean; // Flag to indicate if AI was used
+  confidence: number; // Overall confidence score
 }
 
 export interface EnhancedPDFAnalysisResult {
@@ -86,7 +90,9 @@ export class EnhancedPDFParser {
     
     const enhancedTextItems = this.extractEnhancedTextItems(textContent, viewport);
     const headerItems = this.identifyHeaderItems(enhancedTextItems, viewport.height);
-    const headerAnalysis = this.performSmartHeaderAnalysis(headerItems);
+    
+    // Use AI to enhance the analysis
+    const headerAnalysis = await this.performAIEnhancedHeaderAnalysis(headerItems);
     
     return {
       headerAnalysis,
@@ -183,7 +189,9 @@ export class EnhancedPDFParser {
       staticLabels,
       dynamicData,
       standaloneText,
-      labelDataPairs
+      labelDataPairs,
+      aiEnhanced: false,
+      confidence: this.calculateAverageConfidence([...staticLabels, ...dynamicData, ...standaloneText])
     };
   }
 
@@ -303,6 +311,110 @@ export class EnhancedPDFParser {
   private static calculateProximity(comp1: HeaderComponent, comp2: HeaderComponent): number {
     const distance = this.calculateDistance(comp1, comp2);
     return Math.max(0, 1 - distance / 200); // Normalize to 0-1 scale
+  }
+
+  // AI-Enhanced analysis method
+  private static async performAIEnhancedHeaderAnalysis(headerItems: EnhancedPDFTextItem[]): Promise<SmartHeaderAnalysis> {
+    try {
+      // Convert to enhanced components for AI analysis
+      const enhancedComponents: EnhancedPDFComponent[] = headerItems.map(item => ({
+        text: item.text,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        fontSize: item.fontSize,
+        fontFamily: item.fontFamily,
+        color: item.color,
+        fontWeight: item.fontWeight,
+        isItalic: item.isItalic
+      }));
+
+      // Use AI analyzer for better classification
+      const aiAnalyzedComponents = await AIPDFAnalyzer.analyzeComponents(enhancedComponents);
+      
+      // Convert back to header components with AI insights
+      const staticLabels: HeaderComponent[] = [];
+      const dynamicData: HeaderComponent[] = [];
+      const standaloneText: HeaderComponent[] = [];
+      
+      for (const aiComponent of aiAnalyzedComponents) {
+        const headerComponent: HeaderComponent = {
+          type: aiComponent.aiClassification?.label || 'standalone-text',
+          text: aiComponent.text,
+          x: aiComponent.x,
+          y: aiComponent.y,
+          width: aiComponent.width,
+          height: aiComponent.height,
+          fontSize: aiComponent.fontSize,
+          fontFamily: aiComponent.fontFamily,
+          color: aiComponent.color,
+          fontWeight: aiComponent.fontWeight,
+          isItalic: aiComponent.isItalic,
+          confidence: aiComponent.aiClassification?.score || 0.5
+        };
+
+        switch (headerComponent.type) {
+          case 'static-label':
+            staticLabels.push(headerComponent);
+            break;
+          case 'dynamic-data':
+            dynamicData.push(headerComponent);
+            break;
+          default:
+            standaloneText.push(headerComponent);
+        }
+      }
+
+      // Find AI-enhanced label-data pairs
+      const aiPairs = AIPDFAnalyzer.findLabelDataPairs(aiAnalyzedComponents);
+      const labelDataPairs = aiPairs.map(pair => ({
+        label: staticLabels.find(l => l.text === pair.label.text && l.x === pair.label.x) || 
+               this.convertEnhancedToHeader(pair.label),
+        data: dynamicData.find(d => d.text === pair.data.text && d.x === pair.data.x) || 
+              this.convertEnhancedToHeader(pair.data),
+        proximity: pair.confidence
+      }));
+
+      const allComponents = [...staticLabels, ...dynamicData, ...standaloneText];
+      const confidence = this.calculateAverageConfidence(allComponents);
+
+      return {
+        staticLabels,
+        dynamicData,
+        standaloneText,
+        labelDataPairs,
+        aiEnhanced: true,
+        confidence
+      };
+    } catch (error) {
+      console.warn('AI analysis failed, falling back to rule-based analysis:', error);
+      // Fallback to original rule-based analysis
+      return this.performSmartHeaderAnalysis(headerItems);
+    }
+  }
+
+  private static convertEnhancedToHeader(enhanced: EnhancedPDFComponent): HeaderComponent {
+    return {
+      type: enhanced.aiClassification?.label || 'standalone-text',
+      text: enhanced.text,
+      x: enhanced.x,
+      y: enhanced.y,
+      width: enhanced.width,
+      height: enhanced.height,
+      fontSize: enhanced.fontSize,
+      fontFamily: enhanced.fontFamily,
+      color: enhanced.color,
+      fontWeight: enhanced.fontWeight,
+      isItalic: enhanced.isItalic,
+      confidence: enhanced.aiClassification?.score || 0.5
+    };
+  }
+
+  private static calculateAverageConfidence(components: HeaderComponent[]): number {
+    if (components.length === 0) return 0;
+    const totalConfidence = components.reduce((sum, comp) => sum + comp.confidence, 0);
+    return totalConfidence / components.length;
   }
 
   // Font and styling extraction helpers

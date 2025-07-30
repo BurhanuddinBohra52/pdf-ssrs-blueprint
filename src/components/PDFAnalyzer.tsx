@@ -141,10 +141,14 @@ export const PDFAnalyzer = () => {
                                    enhancedResult.headerAnalysis.dynamicData.length + 
                                    enhancedResult.headerAnalysis.standaloneText.length;
       const pairsCount = enhancedResult.headerAnalysis.labelDataPairs.length;
+      const staticCount = enhancedResult.headerAnalysis.staticLabels.length;
+      const dynamicCount = enhancedResult.headerAnalysis.dynamicData.length;
+      const isAIEnhanced = enhancedResult.headerAnalysis.aiEnhanced;
+      const confidence = Math.round(enhancedResult.headerAnalysis.confidence * 100);
       
       toast({
-        title: "Smart Analysis Complete",
-        description: `Found ${headerComponentsCount} header components and ${pairsCount} label-data pairs`,
+        title: `${isAIEnhanced ? 'AI-Enhanced' : 'Smart'} Analysis Complete`,
+        description: `Found ${staticCount} labels, ${dynamicCount} data fields, ${pairsCount} pairs (${confidence}% confidence)`,
       });
     } catch (error) {
       console.error('PDF Analysis Error:', error);

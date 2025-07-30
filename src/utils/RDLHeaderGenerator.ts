@@ -35,12 +35,18 @@ export class RDLHeaderGenerator {
           <ns0:ReportItems>${reportItems}
           </ns0:ReportItems>
           <ns0:Style>
-            <ns0:Border />
+            <ns0:Border>
+              <ns0:Style>None</ns0:Style>
+            </ns0:Border>
           </ns0:Style>
         </ns0:PageHeader>`;
   }
 
   private static generateHeaderReportItems(headerComponents: HeaderTextbox[]): string {
+    if (headerComponents.length === 0) {
+      return '';
+    }
+    
     return headerComponents.map((component, index) => `
             <ns0:Textbox Name="${component.name || `Textbox${index + 1}`}">
               <ns0:CanGrow>true</ns0:CanGrow>
@@ -51,11 +57,11 @@ export class RDLHeaderGenerator {
                     <ns0:TextRun>
                        <ns0:Value>${this.escapeXML(component.value)}</ns0:Value>
                        <ns0:Style>
-                         ${component.fontFamily ? `<ns0:FontFamily>${component.fontFamily}</ns0:FontFamily>` : ''}
-                         ${component.fontSize ? `<ns0:FontSize>${component.fontSize}</ns0:FontSize>` : ''}
-                         ${component.fontWeight ? `<ns0:FontWeight>${component.fontWeight}</ns0:FontWeight>` : ''}
-                         ${component.isItalic ? `<ns0:FontStyle>Italic</ns0:FontStyle>` : ''}
-                         ${component.color ? `<ns0:Color>${component.color}</ns0:Color>` : ''}
+                         <ns0:FontFamily>${component.fontFamily || 'Arial'}</ns0:FontFamily>
+                         <ns0:FontSize>${component.fontSize || '10pt'}</ns0:FontSize>
+                         <ns0:FontWeight>${component.fontWeight || 'Normal'}</ns0:FontWeight>
+                         ${component.isItalic ? '<ns0:FontStyle>Italic</ns0:FontStyle>' : ''}
+                         <ns0:Color>${component.color || '#000000'}</ns0:Color>
                        </ns0:Style>
                      </ns0:TextRun>
                   </ns0:TextRuns>
@@ -143,9 +149,14 @@ export class RDLHeaderGenerator {
     // Ensure the RDL has proper namespace declarations
     if (!rdlContent.includes('xmlns:ns0=')) {
       rdlContent = rdlContent.replace(
-        /<Report/,
-        '<Report xmlns:ns0="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:ns1="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"'
+        /<Report[^>]*>/,
+        '<Report xmlns:ns0="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:ns1="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">'
       );
+    }
+    
+    // Ensure proper XML declaration
+    if (!rdlContent.startsWith('<?xml')) {
+      rdlContent = '<?xml version="1.0" encoding="utf-8"?>\n' + rdlContent;
     }
     
     return rdlContent;
