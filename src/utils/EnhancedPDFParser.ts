@@ -1,5 +1,5 @@
-// Enhanced PDF Parser with smart header detection and label/data recognition
-import { AIPDFAnalyzer, EnhancedPDFComponent } from './AIPDFAnalyzer';
+// Enhanced PDF Parser with smart header detection, body analysis, and table creation
+import { AIPDFAnalyzer, EnhancedPDFComponent, PDFAnalysisResult, TableStructure } from './AIPDFAnalyzer';
 
 declare global {
   interface Window {
@@ -19,10 +19,11 @@ export interface EnhancedPDFTextItem {
   fontWeight?: string;
   isItalic?: boolean;
   transform: number[];
+  rdlRegion?: 'header' | 'body' | 'footer';
 }
 
 export interface HeaderComponent {
-  type: 'static-label' | 'dynamic-data' | 'standalone-text';
+  type: 'static-label' | 'dynamic-data' | 'standalone-text' | 'table-header' | 'form-label';
   text: string;
   x: number;
   y: number;
@@ -33,46 +34,69 @@ export interface HeaderComponent {
   color?: string;
   fontWeight?: string;
   isItalic?: boolean;
-  // For label-data pairs
   pairedWith?: HeaderComponent;
-  confidence: number; // 0-1 confidence score for detection accuracy
+  confidence: number;
+  rdlRegion?: 'header' | 'body' | 'footer';
+  fieldMapping?: string;
 }
 
 export interface SmartHeaderAnalysis {
   staticLabels: HeaderComponent[];
   dynamicData: HeaderComponent[];
   standaloneText: HeaderComponent[];
+  tableHeaders: HeaderComponent[];
   labelDataPairs: Array<{
     label: HeaderComponent;
     data: HeaderComponent;
     proximity: number;
   }>;
-  aiEnhanced: boolean; // Flag to indicate if AI was used
-  confidence: number; // Overall confidence score
+  aiEnhanced: boolean;
+  confidence: number;
 }
 
-export interface EnhancedPDFAnalysisResult {
+export interface CompleteDocumentAnalysis {
   headerAnalysis: SmartHeaderAnalysis;
+  bodyAnalysis: {
+    tables: TableStructure[];
+    formFields: Array<{
+      label: HeaderComponent;
+      data: HeaderComponent;
+      confidence: number;
+    }>;
+    textBlocks: HeaderComponent[];
+  };
+  footerAnalysis: {
+    components: HeaderComponent[];
+    pageNumbers: HeaderComponent[];
+  };
   allTextItems: EnhancedPDFTextItem[];
   pageWidth: number;
   pageHeight: number;
-  tables: any[]; // Keep existing table detection
+  rdlCompatible: {
+    headerTextboxes: any[];
+    tableBodyData: any;
+    footerComponents: any[];
+  };
 }
 
 export class EnhancedPDFParser {
-  // Common static labels that are likely to have dynamic data next to them
+  // Enhanced common labels including table headers and form fields
   private static readonly COMMON_LABELS = [
-    'SHIP TO', 'BILL TO', 'SOLD TO', 'FROM', 'TO',
-    'DATE', 'ORDER', 'PO', 'INVOICE', 'CUSTOMER',
-    'ADDRESS', 'PHONE', 'EMAIL', 'FAX', 'ACCOUNT',
-    'REFERENCE', 'TERMS', 'DUE DATE', 'TOTAL',
-    'SUBTOTAL', 'TAX', 'AMOUNT', 'QTY', 'QUANTITY',
-    'DESCRIPTION', 'PRICE', 'UNIT PRICE', 'NAME',
-    'COMPANY', 'ATTENTION', 'ATTN', 'REF', 'ORDER #',
-    'INVOICE #', 'CUSTOMER #', 'PAGE', 'PROJECT'
+    'SHIP TO', 'BILL TO', 'SOLD TO', 'FROM', 'TO', 'DATE', 'ORDER', 'PO', 
+    'INVOICE', 'CUSTOMER', 'ADDRESS', 'PHONE', 'EMAIL', 'FAX', 'ACCOUNT',
+    'REFERENCE', 'TERMS', 'DUE DATE', 'TOTAL', 'SUBTOTAL', 'TAX', 'AMOUNT',
+    'QTY', 'QUANTITY', 'DESCRIPTION', 'PRICE', 'UNIT PRICE', 'NAME',
+    'COMPANY', 'ATTENTION', 'ATTN', 'REF', 'ORDER #', 'INVOICE #', 
+    'CUSTOMER #', 'PAGE', 'PROJECT', 'CONTACT', 'DEPARTMENT'
   ];
 
-  static async parsePDF(file: File): Promise<EnhancedPDFAnalysisResult> {
+  private static readonly TABLE_HEADERS = [
+    'ITEM', 'DESCRIPTION', 'QTY', 'QUANTITY', 'PRICE', 'AMOUNT', 'TOTAL',
+    'UNIT PRICE', 'LINE TOTAL', 'PRODUCT', 'SERVICE', 'HOURS', 'RATE',
+    'COST', 'DISCOUNT', 'TAX', 'SUBTOTAL', 'CODE', 'PART', 'MODEL'
+  ];
+
+  static async parsePDF(file: File): Promise<CompleteDocumentAnalysis> {
     // Load PDF.js dynamically if not already loaded
     if (!window.pdfjsLib) {
       await this.loadPDFJS();
@@ -81,26 +105,22 @@ export class EnhancedPDFParser {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     
-    // Process first page
+    // Process first page (can be extended for multi-page)
     const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 1 });
     
     // Get text content with enhanced styling information
     const textContent = await page.getTextContent();
-    
     const enhancedTextItems = this.extractEnhancedTextItems(textContent, viewport);
-    const headerItems = this.identifyHeaderItems(enhancedTextItems, viewport.height);
     
-    // Use AI to enhance the analysis
-    const headerAnalysis = await this.performAIEnhancedHeaderAnalysis(headerItems);
+    // Perform comprehensive document analysis
+    const documentAnalysis = await this.performCompleteDocumentAnalysis(
+      enhancedTextItems, 
+      viewport.width, 
+      viewport.height
+    );
     
-    return {
-      headerAnalysis,
-      allTextItems: enhancedTextItems,
-      pageWidth: viewport.width,
-      pageHeight: viewport.height,
-      tables: [] // Keep existing table detection if needed
-    };
+    return documentAnalysis;
   }
 
   private static extractEnhancedTextItems(textContent: any, viewport: any): EnhancedPDFTextItem[] {
@@ -125,79 +145,19 @@ export class EnhancedPDFParser {
         fontWeight,
         isItalic,
         transform,
-        color: this.extractColor(item) // Extract color if available
+        color: this.extractColor(item)
       };
-    }).filter(item => item.text.length > 0); // Remove empty text items
+    }).filter(item => item.text.length > 0);
   }
 
-  private static identifyHeaderItems(textItems: EnhancedPDFTextItem[], pageHeight: number): EnhancedPDFTextItem[] {
-    // Enhanced header detection - top 25% of page or items with larger font sizes
-    const headerThreshold = pageHeight * 0.25;
-    const averageFontSize = textItems.reduce((sum, item) => sum + item.fontSize, 0) / textItems.length;
-    const largeFontThreshold = averageFontSize * 1.2;
+  private static async performCompleteDocumentAnalysis(
+    textItems: EnhancedPDFTextItem[], 
+    pageWidth: number, 
+    pageHeight: number
+  ): Promise<CompleteDocumentAnalysis> {
     
-    return textItems.filter(item => 
-      item.y <= headerThreshold || 
-      item.fontSize >= largeFontThreshold ||
-      this.isLikelyHeaderText(item.text)
-    );
-  }
-
-  private static performSmartHeaderAnalysis(headerItems: EnhancedPDFTextItem[]): SmartHeaderAnalysis {
-    const components: HeaderComponent[] = headerItems.map(item => 
-      this.createHeaderComponent(item)
-    );
-
-    const staticLabels: HeaderComponent[] = [];
-    const dynamicData: HeaderComponent[] = [];
-    const standaloneText: HeaderComponent[] = [];
-    const labelDataPairs: Array<{ label: HeaderComponent; data: HeaderComponent; proximity: number }> = [];
-
-    // Classify each component
-    for (const component of components) {
-      const classification = this.classifyHeaderComponent(component);
-      component.type = classification.type;
-      component.confidence = classification.confidence;
-
-      if (classification.type === 'static-label') {
-        staticLabels.push(component);
-      } else if (classification.type === 'dynamic-data') {
-        dynamicData.push(component);
-      } else {
-        standaloneText.push(component);
-      }
-    }
-
-    // Find label-data pairs
-    for (const label of staticLabels) {
-      const nearbyData = this.findNearbyDataForLabel(label, dynamicData.concat(standaloneText));
-      if (nearbyData) {
-        const proximity = this.calculateProximity(label, nearbyData.component);
-        labelDataPairs.push({
-          label,
-          data: nearbyData.component,
-          proximity
-        });
-        
-        // Mark components as paired
-        label.pairedWith = nearbyData.component;
-        nearbyData.component.pairedWith = label;
-      }
-    }
-
-    return {
-      staticLabels,
-      dynamicData,
-      standaloneText,
-      labelDataPairs,
-      aiEnhanced: false,
-      confidence: this.calculateAverageConfidence([...staticLabels, ...dynamicData, ...standaloneText])
-    };
-  }
-
-  private static createHeaderComponent(item: EnhancedPDFTextItem): HeaderComponent {
-    return {
-      type: 'standalone-text', // Will be classified later
+    // Step 1: Convert to enhanced components for AI analysis
+    const enhancedComponents: EnhancedPDFComponent[] = textItems.map(item => ({
       text: item.text,
       x: item.x,
       y: item.y,
@@ -207,196 +167,287 @@ export class EnhancedPDFParser {
       fontFamily: item.fontFamily,
       color: item.color,
       fontWeight: item.fontWeight,
-      isItalic: item.isItalic,
-      confidence: 0.5 // Default confidence
+      isItalic: item.isItalic
+    }));
+
+    // Step 2: Perform AI-powered complete document analysis
+    const aiAnalysisResult = await AIPDFAnalyzer.analyzeDocument(enhancedComponents);
+    
+    // Step 3: Process AI results and create comprehensive analysis
+    const completeAnalysis = this.processAIAnalysisResults(
+      aiAnalysisResult, 
+      textItems, 
+      pageWidth, 
+      pageHeight
+    );
+    
+    return completeAnalysis;
+  }
+
+  private static processAIAnalysisResults(
+    aiResult: PDFAnalysisResult,
+    originalTextItems: EnhancedPDFTextItem[],
+    pageWidth: number,
+    pageHeight: number
+  ): CompleteDocumentAnalysis {
+    
+    // Assign RDL regions to original text items based on AI analysis
+    const textItemsWithRegions = this.assignRDLRegions(originalTextItems, aiResult);
+    
+    // Process header analysis
+    const headerAnalysis = this.createSmartHeaderAnalysis(aiResult.headerComponents);
+    
+    // Process body analysis (tables and form fields)
+    const bodyAnalysis = this.createBodyAnalysis(aiResult);
+    
+    // Process footer analysis
+    const footerAnalysis = this.createFooterAnalysis(aiResult.footerComponents);
+    
+    // Create RDL-compatible data structures
+    const rdlCompatible = this.createRDLCompatibleStructures(aiResult);
+    
+    return {
+      headerAnalysis,
+      bodyAnalysis,
+      footerAnalysis,
+      allTextItems: textItemsWithRegions,
+      pageWidth,
+      pageHeight,
+      rdlCompatible
     };
   }
 
-  private static classifyHeaderComponent(component: HeaderComponent): { type: HeaderComponent['type']; confidence: number } {
-    const text = component.text.toUpperCase().trim();
+  private static assignRDLRegions(
+    textItems: EnhancedPDFTextItem[], 
+    aiResult: PDFAnalysisResult
+  ): EnhancedPDFTextItem[] {
     
-    // Check if it's a known static label
-    const isKnownLabel = this.COMMON_LABELS.some(label => 
-      text === label || text.includes(label) || text.endsWith(':')
-    );
+    return textItems.map(item => {
+      // Find corresponding component in AI analysis
+      const headerComponent = aiResult.headerComponents.find(h => 
+        h.text === item.text && Math.abs(h.x - item.x) < 5 && Math.abs(h.y - item.y) < 5
+      );
+      const bodyComponent = aiResult.bodyComponents.find(b => 
+        b.text === item.text && Math.abs(b.x - item.x) < 5 && Math.abs(b.y - item.y) < 5
+      );
+      const footerComponent = aiResult.footerComponents.find(f => 
+        f.text === item.text && Math.abs(f.x - item.x) < 5 && Math.abs(f.y - item.y) < 5
+      );
+      
+      let rdlRegion: 'header' | 'body' | 'footer' = 'body'; // default
+      if (headerComponent) rdlRegion = 'header';
+      else if (footerComponent) rdlRegion = 'footer';
+      
+      return {
+        ...item,
+        rdlRegion
+      };
+    });
+  }
+
+  private static createSmartHeaderAnalysis(headerComponents: EnhancedPDFComponent[]): SmartHeaderAnalysis {
+    const staticLabels: HeaderComponent[] = [];
+    const dynamicData: HeaderComponent[] = [];
+    const standaloneText: HeaderComponent[] = [];
+    const tableHeaders: HeaderComponent[] = [];
     
-    if (isKnownLabel) {
-      return { type: 'static-label', confidence: 0.9 };
-    }
-
-    // Check patterns that suggest static labels
-    if (this.isLikelyStaticLabel(text)) {
-      return { type: 'static-label', confidence: 0.7 };
-    }
-
-    // Check patterns that suggest dynamic data
-    if (this.isLikelyDynamicData(text)) {
-      return { type: 'dynamic-data', confidence: 0.8 };
-    }
-
-    // Default to standalone text
-    return { type: 'standalone-text', confidence: 0.5 };
-  }
-
-  private static isLikelyStaticLabel(text: string): boolean {
-    return (
-      text.endsWith(':') ||
-      text.endsWith('#') ||
-      /^[A-Z\s]{2,}$/.test(text) && text.length <= 20 ||
-      text.includes(' TO ') ||
-      text.includes(' NUMBER') ||
-      text.includes(' DATE') ||
-      text.includes(' CODE')
-    );
-  }
-
-  private static isLikelyDynamicData(text: string): boolean {
-    return (
-      /^\d+/.test(text) || // Starts with number
-      /\d{2,}/.test(text) || // Contains 2+ digits
-      /@/.test(text) || // Email
-      /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(text) || // Date
-      /^\$\d/.test(text) || // Price
-      text.length > 30 || // Long text likely to be data
-      /^[a-z]/.test(text) // Starts with lowercase (likely data, not label)
-    );
-  }
-
-  private static isLikelyHeaderText(text: string): boolean {
-    const upperText = text.toUpperCase();
-    return (
-      this.COMMON_LABELS.some(label => upperText.includes(label)) ||
-      upperText.includes('INVOICE') ||
-      upperText.includes('ORDER') ||
-      upperText.includes('COMPANY') ||
-      /^\d+$/.test(text) // Invoice/order numbers
-    );
-  }
-
-  private static findNearbyDataForLabel(label: HeaderComponent, candidates: HeaderComponent[]): { component: HeaderComponent; distance: number } | null {
-    const maxDistance = 200; // Maximum pixel distance to consider
-    let bestCandidate: HeaderComponent | null = null;
-    let bestDistance = Infinity;
-
-    for (const candidate of candidates) {
-      // Skip if already paired
-      if (candidate.pairedWith) continue;
-
-      const distance = this.calculateDistance(label, candidate);
-      const isNearby = this.isNearbyComponent(label, candidate, maxDistance);
-
-      if (isNearby && distance < bestDistance) {
-        bestCandidate = candidate;
-        bestDistance = distance;
+    // Convert enhanced components to header components with classification
+    for (const component of headerComponents) {
+      const headerComponent: HeaderComponent = {
+        type: (component.aiClassification?.label as HeaderComponent['type']) || 'standalone-text',
+        text: component.text,
+        x: component.x,
+        y: component.y,
+        width: component.width,
+        height: component.height,
+        fontSize: component.fontSize,
+        fontFamily: component.fontFamily,
+        color: component.color,
+        fontWeight: component.fontWeight,
+        isItalic: component.isItalic,
+        confidence: component.aiClassification?.score || 0.5,
+        rdlRegion: 'header',
+        fieldMapping: component.fieldMapping
+      };
+      
+      switch (headerComponent.type) {
+        case 'static-label':
+        case 'form-label':
+          staticLabels.push(headerComponent);
+          break;
+        case 'dynamic-data':
+          dynamicData.push(headerComponent);
+          break;
+        case 'table-header':
+          tableHeaders.push(headerComponent);
+          break;
+        default:
+          standaloneText.push(headerComponent);
       }
     }
-
-    return bestCandidate ? { component: bestCandidate, distance: bestDistance } : null;
-  }
-
-  private static isNearbyComponent(comp1: HeaderComponent, comp2: HeaderComponent, maxDistance: number): boolean {
-    const distance = this.calculateDistance(comp1, comp2);
-    const isRightAdjacent = comp2.x > comp1.x && comp2.x <= comp1.x + comp1.width + maxDistance;
-    const isSameRow = Math.abs(comp1.y - comp2.y) <= Math.max(comp1.height, comp2.height);
     
-    return distance <= maxDistance && (isRightAdjacent || isSameRow);
+    // Find label-data pairs using AI insights
+    const labelDataPairs = this.findEnhancedLabelDataPairs(staticLabels, [...dynamicData, ...standaloneText]);
+    
+    const allComponents = [...staticLabels, ...dynamicData, ...standaloneText, ...tableHeaders];
+    const confidence = this.calculateAverageConfidence(allComponents);
+    
+    return {
+      staticLabels,
+      dynamicData,
+      standaloneText,
+      tableHeaders,
+      labelDataPairs,
+      aiEnhanced: true,
+      confidence
+    };
   }
 
-  private static calculateDistance(comp1: HeaderComponent, comp2: HeaderComponent): number {
-    const dx = Math.abs(comp1.x - comp2.x);
-    const dy = Math.abs(comp1.y - comp2.y);
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  private static calculateProximity(comp1: HeaderComponent, comp2: HeaderComponent): number {
-    const distance = this.calculateDistance(comp1, comp2);
-    return Math.max(0, 1 - distance / 200); // Normalize to 0-1 scale
-  }
-
-  // AI-Enhanced analysis method
-  private static async performAIEnhancedHeaderAnalysis(headerItems: EnhancedPDFTextItem[]): Promise<SmartHeaderAnalysis> {
-    try {
-      // Convert to enhanced components for AI analysis
-      const enhancedComponents: EnhancedPDFComponent[] = headerItems.map(item => ({
-        text: item.text,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
-        fontSize: item.fontSize,
-        fontFamily: item.fontFamily,
-        color: item.color,
-        fontWeight: item.fontWeight,
-        isItalic: item.isItalic
+  private static createBodyAnalysis(aiResult: PDFAnalysisResult): {
+    tables: TableStructure[];
+    formFields: Array<{ label: HeaderComponent; data: HeaderComponent; confidence: number }>;
+    textBlocks: HeaderComponent[];
+  } {
+    
+    // Convert AI table structures to our format
+    const tables = aiResult.tables;
+    
+    // Extract form fields from label-data pairs in body region
+    const formFields = aiResult.labelDataPairs
+      .filter(pair => {
+        const labelInBody = aiResult.bodyComponents.some(b => 
+          b.text === pair.label.text && Math.abs(b.x - pair.label.x) < 5
+        );
+        return labelInBody;
+      })
+      .map(pair => ({
+        label: this.convertEnhancedToHeader(pair.label, 'body'),
+        data: this.convertEnhancedToHeader(pair.data, 'body'),
+        confidence: pair.confidence
       }));
+    
+    // Convert body components that aren't in tables or form fields to text blocks
+    const textBlocks = aiResult.bodyComponents
+      .filter(component => {
+        const inTable = tables.some(table => 
+          table.headers.some(h => h.text === component.text) ||
+          table.rows.some(row => row.some(cell => cell.text === component.text))
+        );
+        const inFormField = formFields.some(field => 
+          field.label.text === component.text || field.data.text === component.text
+        );
+        return !inTable && !inFormField;
+      })
+      .map(component => this.convertEnhancedToHeader(component, 'body'));
+    
+    return {
+      tables,
+      formFields,
+      textBlocks
+    };
+  }
 
-      // Use AI analyzer for better classification
-      const aiAnalyzedComponents = await AIPDFAnalyzer.analyzeComponents(enhancedComponents);
-      
-      // Convert back to header components with AI insights
-      const staticLabels: HeaderComponent[] = [];
-      const dynamicData: HeaderComponent[] = [];
-      const standaloneText: HeaderComponent[] = [];
-      
-      for (const aiComponent of aiAnalyzedComponents) {
-        const headerComponent: HeaderComponent = {
-          type: aiComponent.aiClassification?.label || 'standalone-text',
-          text: aiComponent.text,
-          x: aiComponent.x,
-          y: aiComponent.y,
-          width: aiComponent.width,
-          height: aiComponent.height,
-          fontSize: aiComponent.fontSize,
-          fontFamily: aiComponent.fontFamily,
-          color: aiComponent.color,
-          fontWeight: aiComponent.fontWeight,
-          isItalic: aiComponent.isItalic,
-          confidence: aiComponent.aiClassification?.score || 0.5
-        };
+  private static createFooterAnalysis(footerComponents: EnhancedPDFComponent[]): {
+    components: HeaderComponent[];
+    pageNumbers: HeaderComponent[];
+  } {
+    
+    const components = footerComponents.map(component => 
+      this.convertEnhancedToHeader(component, 'footer')
+    );
+    
+    // Identify page numbers
+    const pageNumbers = components.filter(component => 
+      /^page\s+\d+|^\d+\s+of\s+\d+|\d+$/.test(component.text.toLowerCase())
+    );
+    
+    return {
+      components,
+      pageNumbers
+    };
+  }
 
-        switch (headerComponent.type) {
-          case 'static-label':
-            staticLabels.push(headerComponent);
-            break;
-          case 'dynamic-data':
-            dynamicData.push(headerComponent);
-            break;
-          default:
-            standaloneText.push(headerComponent);
+  private static createRDLCompatibleStructures(aiResult: PDFAnalysisResult): {
+    headerTextboxes: any[];
+    tableBodyData: any;
+    footerComponents: any[];
+  } {
+    
+    // Convert using AI analyzer's conversion methods
+    const { headerTextboxes, tableBodyData } = AIPDFAnalyzer.convertToRDLFormats(aiResult);
+    
+    // Convert footer components
+    const footerComponents = aiResult.footerComponents.map((component, index) => ({
+      name: `Footer_${index + 1}`,
+      value: component.text,
+      top: `${(component.y / 72).toFixed(4)}in`,
+      left: `${(component.x / 72).toFixed(4)}in`,
+      width: `${(component.width / 72).toFixed(4)}in`,
+      height: `${(component.height / 72).toFixed(4)}in`,
+      fontSize: `${component.fontSize || 10}pt`,
+      fontFamily: component.fontFamily || 'Arial',
+      fontWeight: component.fontWeight || 'Normal',
+      type: component.aiClassification?.label || 'standalone-text'
+    }));
+    
+    return {
+      headerTextboxes,
+      tableBodyData,
+      footerComponents
+    };
+  }
+
+  private static findEnhancedLabelDataPairs(
+    labels: HeaderComponent[], 
+    dataComponents: HeaderComponent[]
+  ): Array<{ label: HeaderComponent; data: HeaderComponent; proximity: number }> {
+    
+    const pairs: Array<{ label: HeaderComponent; data: HeaderComponent; proximity: number }> = [];
+    const usedDataComponents = new Set<HeaderComponent>();
+    
+    for (const label of labels) {
+      const candidates = dataComponents.filter(data => 
+        !usedDataComponents.has(data) && this.isValidLabelDataPair(label, data)
+      );
+      
+      if (candidates.length > 0) {
+        const closest = candidates.reduce((prev, curr) => 
+          this.calculateDistance(label, curr) < this.calculateDistance(label, prev) ? curr : prev
+        );
+        
+        const proximity = this.calculateProximity(label, closest);
+        
+        if (proximity > 0.3) { // Minimum proximity threshold
+          pairs.push({ label, data: closest, proximity });
+          usedDataComponents.add(closest);
+          
+          // Mark as paired
+          label.pairedWith = closest;
+          closest.pairedWith = label;
         }
       }
-
-      // Find AI-enhanced label-data pairs
-      const aiPairs = AIPDFAnalyzer.findLabelDataPairs(aiAnalyzedComponents);
-      const labelDataPairs = aiPairs.map(pair => ({
-        label: staticLabels.find(l => l.text === pair.label.text && l.x === pair.label.x) || 
-               this.convertEnhancedToHeader(pair.label),
-        data: dynamicData.find(d => d.text === pair.data.text && d.x === pair.data.x) || 
-              this.convertEnhancedToHeader(pair.data),
-        proximity: pair.confidence
-      }));
-
-      const allComponents = [...staticLabels, ...dynamicData, ...standaloneText];
-      const confidence = this.calculateAverageConfidence(allComponents);
-
-      return {
-        staticLabels,
-        dynamicData,
-        standaloneText,
-        labelDataPairs,
-        aiEnhanced: true,
-        confidence
-      };
-    } catch (error) {
-      console.warn('AI analysis failed, falling back to rule-based analysis:', error);
-      // Fallback to original rule-based analysis
-      return this.performSmartHeaderAnalysis(headerItems);
     }
+    
+    return pairs;
   }
 
-  private static convertEnhancedToHeader(enhanced: EnhancedPDFComponent): HeaderComponent {
+  private static isValidLabelDataPair(label: HeaderComponent, data: HeaderComponent): boolean {
+    const distance = this.calculateDistance(label, data);
+    const maxDistance = 300; // pixels
+    
+    // Check spatial relationship (right or below)
+    const isToRight = data.x > label.x + label.width && Math.abs(data.y - label.y) < 30;
+    const isBelow = data.y > label.y + label.height && Math.abs(data.x - label.x) < 100;
+    
+    return distance <= maxDistance && (isToRight || isBelow);
+  }
+
+  private static convertEnhancedToHeader(
+    enhanced: EnhancedPDFComponent, 
+    region: 'header' | 'body' | 'footer'
+  ): HeaderComponent {
     return {
-      type: enhanced.aiClassification?.label || 'standalone-text',
+      type: (enhanced.aiClassification?.label as HeaderComponent['type']) || 'standalone-text',
       text: enhanced.text,
       x: enhanced.x,
       y: enhanced.y,
@@ -407,8 +458,21 @@ export class EnhancedPDFParser {
       color: enhanced.color,
       fontWeight: enhanced.fontWeight,
       isItalic: enhanced.isItalic,
-      confidence: enhanced.aiClassification?.score || 0.5
+      confidence: enhanced.aiClassification?.score || 0.5,
+      rdlRegion: region,
+      fieldMapping: enhanced.fieldMapping
     };
+  }
+
+  private static calculateDistance(comp1: HeaderComponent, comp2: HeaderComponent): number {
+    const dx = Math.abs(comp1.x - comp2.x);
+    const dy = Math.abs(comp1.y - comp2.y);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  private static calculateProximity(comp1: HeaderComponent, comp2: HeaderComponent): number {
+    const distance = this.calculateDistance(comp1, comp2);
+    return Math.max(0, 1 - distance / 300); // Normalize to 0-1 scale
   }
 
   private static calculateAverageConfidence(components: HeaderComponent[]): number {
@@ -417,7 +481,7 @@ export class EnhancedPDFParser {
     return totalConfidence / components.length;
   }
 
-  // Font and styling extraction helpers
+  // Font and styling extraction helpers (unchanged)
   private static normalizeFontFamily(fontName: string): string {
     const cleanName = fontName.replace(/[+-]/g, '').toLowerCase();
     if (cleanName.includes('arial')) return 'Arial';
@@ -441,9 +505,8 @@ export class EnhancedPDFParser {
   }
 
   private static extractColor(item: any): string | undefined {
-    // PDF.js might provide color information in the item
-    // This is a placeholder for color extraction logic
-    return undefined; // Default to undefined if no color info available
+    // Extract color information if available in PDF.js
+    return item.color || undefined;
   }
 
   private static async loadPDFJS(): Promise<void> {
@@ -459,4 +522,47 @@ export class EnhancedPDFParser {
       document.head.appendChild(script);
     });
   }
+
+  // Utility method for easy integration with RDL generators
+  static async parseAndConvertForRDL(file: File): Promise<{
+    headerTextboxes: any[];
+    tableBodyData: any;
+    footerComponents: any[];
+    fullAnalysis: CompleteDocumentAnalysis;
+  }> {
+    const analysis = await this.parsePDF(file);
+    
+    return {
+      headerTextboxes: analysis.rdlCompatible.headerTextboxes,
+      tableBodyData: analysis.rdlCompatible.tableBodyData,
+      footerComponents: analysis.rdlCompatible.footerComponents,
+      fullAnalysis: analysis
+    };
+  }
 }
+
+// Export utility function for easy usage
+export const parseAndGenerateRDL = async (
+  pdfFile: File, 
+  baseRDL: string
+): Promise<{ rdl: string; analysis: CompleteDocumentAnalysis }> => {
+  
+  // Parse PDF with complete analysis
+  const { headerTextboxes, tableBodyData, footerComponents, fullAnalysis } = 
+    await EnhancedPDFParser.parseAndConvertForRDL(pdfFile);
+  
+  // Import RDLHeaderGenerator dynamically to avoid circular imports
+  const { RDLHeaderGenerator } = await import('./RDLHeaderGenerator');
+  
+  // Generate complete RDL
+  const finalRDL = RDLHeaderGenerator.generateExecutableRDL(
+    baseRDL,
+    headerTextboxes,
+    tableBodyData
+  );
+  
+  return {
+    rdl: finalRDL,
+    analysis: fullAnalysis
+  };
+};
