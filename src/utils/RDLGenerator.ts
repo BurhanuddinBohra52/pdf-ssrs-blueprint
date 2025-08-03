@@ -297,18 +297,70 @@ export class RDLGenerator {
     const widthInches = (component.width / 72).toFixed(2);
     const heightInches = (component.height / 72).toFixed(2);
 
+    // Determine the value - use expression if it's an expression field, otherwise use content
+    let value = component.content || `=[Field${index}]`;
+    if (component.isExpression && component.expression) {
+      value = component.expression;
+    } else if (component.classification === 'dynamic-data' && !component.expression) {
+      // Auto-generate expression for dynamic data without explicit expression
+      const fieldName = (component.originalContent || component.content || '').replace(/[^a-zA-Z0-9]/g, '');
+      value = fieldName ? `=Fields!${fieldName}.Value` : component.content || `=[Field${index}]`;
+    }
+
+    // Escape XML special characters
+    value = value.replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;')
+                 .replace(/"/g, '&quot;')
+                 .replace(/'/g, '&apos;');
+
+    // Generate textbox name based on classification
+    let textboxName = `Textbox${index}`;
+    if (component.classification === 'static-label') {
+      textboxName = `Label${index}`;
+    } else if (component.classification === 'dynamic-data') {
+      const fieldName = (component.originalContent || component.content || '').replace(/[^a-zA-Z0-9]/g, '');
+      textboxName = fieldName ? `Data_${fieldName}` : `DataField${index}`;
+    }
+
     return `
-      <Textbox Name="Textbox${index}">
+      <Textbox Name="${textboxName}">
         <CanGrow>true</CanGrow>
-        <Value>${component.content || `=[Field${index}]`}</Value>
-        <Style>
-          <FontSize>${component.styles?.fontSize || 10}pt</FontSize>
-          <FontFamily>${component.styles?.fontFamily || 'Arial'}</FontFamily>
-        </Style>
+        <KeepTogether>true</KeepTogether>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>${value}</Value>
+                <Style>
+                  <FontStyle>Normal</FontStyle>
+                  <FontFamily>${component.styles?.fontFamily || 'Tahoma'}</FontFamily>
+                  <FontSize>${component.styles?.fontSize || 11}pt</FontSize>
+                  <FontWeight>Normal</FontWeight>
+                  <Color>Black</Color>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style>
+              <TextAlign>${component.styles?.alignment || 'Left'}</TextAlign>
+            </Style>
+          </Paragraph>
+        </Paragraphs>
+        <rd:DefaultName>${textboxName}</rd:DefaultName>
         <Top>${topInches}in</Top>
         <Left>${leftInches}in</Left>
         <Width>${widthInches}in</Width>
         <Height>${heightInches}in</Height>
+        <ZIndex>${index}</ZIndex>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+          <PaddingLeft>2pt</PaddingLeft>
+          <PaddingRight>2pt</PaddingRight>
+          <PaddingTop>2pt</PaddingTop>
+          <PaddingBottom>2pt</PaddingBottom>
+        </Style>
       </Textbox>`;
   }
 

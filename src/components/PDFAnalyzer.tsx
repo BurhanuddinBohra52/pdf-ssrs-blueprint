@@ -5,11 +5,12 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database } from "lucide-react";
+import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database, Edit3 } from "lucide-react";
 import { PDFParser, PDFAnalysisResult as PDFParserResult } from "@/utils/PDFParser";
 import { EnhancedPDFParser } from "@/utils/EnhancedPDFParser";
 import { RDLGenerator } from "@/utils/RDLGenerator";
 import { RDLHeaderGenerator, HeaderTextbox } from "@/utils/RDLHeaderGenerator";
+import { PDFFieldEditor } from "@/components/PDFFieldEditor";
 
 interface PDFComponent {
   id: string;
@@ -20,6 +21,11 @@ interface PDFComponent {
   width: number;
   height: number;
   content?: string;
+  originalContent?: string;
+  expression?: string;
+  isExpression?: boolean;
+  classification?: 'static-label' | 'dynamic-data' | 'standalone-text';
+  confidence?: number;
   styles?: {
     fontSize?: number;
     fontFamily?: string;
@@ -53,6 +59,7 @@ export const PDFAnalyzer = () => {
   const [progress, setProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [enhancedAnalysis, setEnhancedAnalysis] = useState<any | null>(null);
+  const [editableFields, setEditableFields] = useState<PDFComponent[]>([]);
   const [activeTab, setActiveTab] = useState("upload");
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,6 +141,11 @@ export const PDFAnalyzer = () => {
       
       setAnalysisResult(analysisResult);
       setEnhancedAnalysis(enhancedResult);
+      
+      // Convert to editable fields with enhanced data
+      const editableFieldsData = convertToEditableFields(analysisResult.components, enhancedResult);
+      setEditableFields(editableFieldsData);
+      
       setProgress(100);
       setActiveTab("results");
       
@@ -160,6 +172,99 @@ export const PDFAnalyzer = () => {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const convertToEditableFields = (components: PDFComponent[], enhancedResult: any): PDFComponent[] => {
+    const editableFields: PDFComponent[] = [];
+    
+    // Add components from enhanced analysis
+    if (enhancedResult?.headerAnalysis) {
+      const headerAnalysis = enhancedResult.headerAnalysis;
+      
+      // Process static labels
+      headerAnalysis.staticLabels.forEach((label: any, index: number) => {
+        editableFields.push({
+          id: `header-static-${index}`,
+          type: 'textbox',
+          section: 'header',
+          x: label.x || 0,
+          y: label.y || 0,
+          width: label.width || 100,
+          height: label.height || 20,
+          content: label.text,
+          originalContent: label.text,
+          classification: 'static-label',
+          confidence: label.confidence,
+          styles: {
+            fontSize: label.fontSize,
+            fontFamily: label.fontFamily
+          }
+        });
+      });
+      
+      // Process dynamic data
+      headerAnalysis.dynamicData.forEach((data: any, index: number) => {
+        editableFields.push({
+          id: `header-dynamic-${index}`,
+          type: 'textbox',
+          section: 'header',
+          x: data.x || 0,
+          y: data.y || 0,
+          width: data.width || 100,
+          height: data.height || 20,
+          content: data.text,
+          originalContent: data.text,
+          classification: 'dynamic-data',
+          confidence: data.confidence,
+          isExpression: true,
+          expression: `=Fields!${data.text.replace(/[^a-zA-Z0-9]/g, '')}.Value`,
+          styles: {
+            fontSize: data.fontSize,
+            fontFamily: data.fontFamily
+          }
+        });
+      });
+      
+      // Process standalone text
+      headerAnalysis.standaloneText.forEach((text: any, index: number) => {
+        editableFields.push({
+          id: `header-standalone-${index}`,
+          type: 'textbox',
+          section: 'header',
+          x: text.x || 0,
+          y: text.y || 0,
+          width: text.width || 100,
+          height: text.height || 20,
+          content: text.text,
+          originalContent: text.text,
+          classification: 'standalone-text',
+          confidence: text.confidence,
+          styles: {
+            fontSize: text.fontSize,
+            fontFamily: text.fontFamily
+          }
+        });
+      });
+    }
+    
+    // Add remaining components that weren't in enhanced analysis
+    components.forEach((component, index) => {
+      const exists = editableFields.some(field => 
+        Math.abs(field.x - component.x) < 10 && 
+        Math.abs(field.y - component.y) < 10 &&
+        field.content === component.content
+      );
+      
+      if (!exists) {
+        editableFields.push({
+          ...component,
+          originalContent: component.content,
+          classification: component.section === 'header' ? 'static-label' : 'standalone-text'
+        });
+      }
+    });
+    
+    return editableFields;
   };
 
   const convertPDFAnalysisToComponents = (pdfAnalysis: PDFParserResult): AnalysisResult => {
@@ -323,9 +428,19 @@ export const PDFAnalyzer = () => {
   };
 
   const generateRDLTemplate = () => {
-    if (!analysisResult) return '';
+    if (!analysisResult && !editableFields.length) return '';
     
-    return RDLGenerator.generateRDLTemplate([], [], analysisResult.components);
+    // Use edited fields if available, otherwise fall back to analysis result
+    const componentsToUse = editableFields.length > 0 ? editableFields : analysisResult?.components || [];
+    return RDLGenerator.generateRDLTemplate([], [], componentsToUse);
+  };
+
+  const handleFieldsChange = (updatedFields: PDFComponent[]) => {
+    setEditableFields(updatedFields);
+  };
+
+  const handleGenerateRDLFromEditor = () => {
+    downloadRDLTemplate();
   };
 
   const downloadRDLTemplate = () => {
@@ -441,7 +556,7 @@ export const PDFAnalyzer = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gradient-card shadow-card">
+        <TabsList className="grid w-full grid-cols-5 bg-gradient-card shadow-card">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload PDF
@@ -453,6 +568,10 @@ export const PDFAnalyzer = () => {
           <TabsTrigger value="results" className="flex items-center gap-2" disabled={!analysisResult}>
             <Grid3X3 className="w-4 h-4" />
             Results
+          </TabsTrigger>
+          <TabsTrigger value="editor" className="flex items-center gap-2" disabled={!editableFields.length}>
+            <Edit3 className="w-4 h-4" />
+            Field Editor
           </TabsTrigger>
           <TabsTrigger value="rdl" className="flex items-center gap-2" disabled={!analysisResult}>
             <Database className="w-4 h-4" />
@@ -828,6 +947,16 @@ export const PDFAnalyzer = () => {
                 </div>
               </Card>
             </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="editor" className="space-y-6">
+          {editableFields.length > 0 && (
+            <PDFFieldEditor 
+              fields={editableFields}
+              onFieldsChange={handleFieldsChange}
+              onGenerateRDL={handleGenerateRDLFromEditor}
+            />
           )}
         </TabsContent>
 
