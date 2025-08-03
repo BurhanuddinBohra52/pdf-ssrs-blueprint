@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { RDLPreview } from "./RDLPreview";
 import { 
   Edit, 
   Move, 
@@ -19,7 +20,9 @@ import {
   Code, 
   Database,
   Save,
-  Undo
+  Undo,
+  Trash2,
+  Eye
 } from "lucide-react";
 
 interface PDFField {
@@ -133,6 +136,19 @@ export const PDFFieldEditor: React.FC<PDFFieldEditorProps> = ({
     });
   }, [fields, onFieldsChange, saveToHistory, toast]);
 
+  // Delete field
+  const deleteField = useCallback((fieldId: string) => {
+    const updatedFields = fields.filter(field => field.id !== fieldId);
+    
+    saveToHistory(updatedFields);
+    onFieldsChange(updatedFields);
+    
+    toast({
+      title: "Field Deleted",
+      description: "Field removed successfully",
+    });
+  }, [fields, onFieldsChange, saveToHistory, toast]);
+
   // Get fields by section
   const getFieldsBySection = useCallback((section: 'header' | 'body' | 'footer') => {
     return fields.filter(field => field.section === section);
@@ -216,6 +232,16 @@ export const PDFFieldEditor: React.FC<PDFFieldEditorProps> = ({
               <EditFieldForm field={field} onSave={updateField} onCancel={() => setEditingField(null)} />
             </DialogContent>
           </Dialog>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => deleteField(field.id)}
+            className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete
+          </Button>
           
           <Select
             value={field.section}
@@ -418,6 +444,20 @@ export const PDFFieldEditor: React.FC<PDFFieldEditorProps> = ({
             <Undo className="w-4 h-4 mr-2" />
             Undo
           </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Eye className="w-4 h-4 mr-2" />
+                Preview RDL
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>RDL Structure Preview</DialogTitle>
+              </DialogHeader>
+              <RDLPreview fields={fields} />
+            </DialogContent>
+          </Dialog>
           <Button onClick={onGenerateRDL} className="bg-gradient-primary">
             <Database className="w-4 h-4 mr-2" />
             Generate RDL

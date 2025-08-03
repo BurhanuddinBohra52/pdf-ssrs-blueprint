@@ -122,26 +122,27 @@ export class RDLGenerator {
       <Prompt>Enter Parameter Value</Prompt>
     </ReportParameter>
   </ReportParameters>
-  <Body>
-    <ReportItems>
-      ${reportItemsXML}
-    </ReportItems>
-    <Height>11in</Height>
-    <Style />
-  </Body>
-  <Width>8.5in</Width>
-  <Page>
-    <PageHeight>11in</PageHeight>
-    <PageWidth>8.5in</PageWidth>
-    <LeftMargin>1in</LeftMargin>
-    <RightMargin>1in</RightMargin>
-    <TopMargin>1in</TopMargin>
-    <BottomMargin>1in</BottomMargin>
-    <Style />
-  </Page>
-  <AutoRefresh>0</AutoRefresh>
-  <DataSources />
-  <DataSets />
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          ${reportItemsXML}
+        </ReportItems>
+        <Height>11in</Height>
+        <Style />
+      </Body>
+      <Width>8.5in</Width>
+      <Page>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
   <rd:ReportUnitType>Inch</rd:ReportUnitType>
   <rd:ReportID>${this.generateGUID()}</rd:ReportID>
 </Report>`;
