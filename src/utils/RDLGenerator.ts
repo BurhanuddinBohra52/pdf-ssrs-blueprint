@@ -195,17 +195,14 @@ export class RDLGenerator {
           <PrintOnFirstPage>true</PrintOnFirstPage>
           <PrintOnLastPage>true</PrintOnLastPage>
           <ReportItems>
-            <Textbox Name="PageHeaderText">
-              <Value>="Page " &amp; Globals!PageNumber &amp; " of " &amp; Globals!TotalPages</Value>
-              <Style>
-                <TextAlign>Right</TextAlign>
-                <FontSize>10pt</FontSize>
-              </Style>
-              <Top>0.1in</Top>
-              <Left>5in</Left>
-              <Width>2in</Width>
-              <Height>0.25in</Height>
-            </Textbox>
+            ${this.generateCorrectTextbox('PageHeaderText', '"Page " &amp; Globals!PageNumber &amp; " of " &amp; Globals!TotalPages', {
+              top: '0.1in',
+              left: '5in',
+              width: '2in',
+              height: '0.25in',
+              textAlign: 'Right',
+              fontSize: '10pt'
+            })}
           </ReportItems>
         </PageHeader>
         <PageHeight>11in</PageHeight>
@@ -221,6 +218,78 @@ export class RDLGenerator {
   <rd:ReportUnitType>Inch</rd:ReportUnitType>
   <rd:ReportID>${this.generateGUID()}</rd:ReportID>
 </Report>`;
+  }
+
+  // Corrected method to generate SSRS 2016+ compliant textboxes
+  private static generateCorrectTextbox(
+    name: string,
+    value: string,
+    options: {
+      top: string;
+      left: string;
+      width: string;
+      height: string;
+      textAlign?: string;
+      fontSize?: string;
+      fontWeight?: string;
+      backgroundColor?: string;
+      format?: string;
+      paddingLeft?: string;
+      paddingRight?: string;
+      paddingTop?: string;
+      paddingBottom?: string;
+    }
+  ): string {
+    const {
+      top, left, width, height,
+      textAlign = 'Left',
+      fontSize = '10pt',
+      fontWeight = 'Normal',
+      backgroundColor,
+      format,
+      paddingLeft = '2pt',
+      paddingRight = '2pt',
+      paddingTop = '2pt',
+      paddingBottom = '2pt'
+    } = options;
+
+    return `
+      <Textbox Name="${name}">
+        <CanGrow>true</CanGrow>
+        <KeepTogether>true</KeepTogether>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>${value}</Value>
+                <Style>
+                  <FontSize>${fontSize}</FontSize>
+                  <FontWeight>${fontWeight}</FontWeight>
+                  ${format ? `<Format>${format}</Format>` : ''}
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style>
+              <TextAlign>${textAlign}</TextAlign>
+            </Style>
+          </Paragraph>
+        </Paragraphs>
+        <rd:DefaultName>${name}</rd:DefaultName>
+        <Top>${top}</Top>
+        <Left>${left}</Left>
+        <Height>${height}</Height>
+        <Width>${width}</Width>
+        <Style>
+          ${backgroundColor ? `<BackgroundColor>${backgroundColor}</BackgroundColor>` : ''}
+          <Border>
+            <Style>None</Style>
+          </Border>
+          <PaddingLeft>${paddingLeft}</PaddingLeft>
+          <PaddingRight>${paddingRight}</PaddingRight>
+          <PaddingTop>${paddingTop}</PaddingTop>
+          <PaddingBottom>${paddingBottom}</PaddingBottom>
+        </Style>
+      </Textbox>`;
   }
 
   private static generateReportItemsFromPDF(analysisResult?: PDFAnalysisResult): string {
@@ -337,120 +406,167 @@ export class RDLGenerator {
       </Tablix>`;
   }
 
+  private static generateTableHeaderRow(headers: string[], mergedCells: any[]): string {
+    const headerCells = headers.map((header, colIndex) => {
+      const mergedCell = mergedCells.find(mc => mc.row === 0 && mc.col === colIndex);
+      const colspan = mergedCell?.colspan || 1;
+      const rowspan = mergedCell?.rowspan || 1;
+      
+      return `
+        <TablixCell>
+          ${colspan > 1 ? `<ColSpan>${colspan}</ColSpan>` : ''}
+          ${rowspan > 1 ? `<RowSpan>${rowspan}</RowSpan>` : ''}
+          <CellContents>
+            <Rectangle Name="HeaderRect_${colIndex}">
+              <ReportItems>
+                ${this.generateCorrectTextbox(`HeaderText_${colIndex}`, this.escapeXMLValue(header), {
+                  top: '0in',
+                  left: '0in',
+                  width: '100%',
+                  height: '100%',
+                  textAlign: 'Center',
+                  fontWeight: 'Bold',
+                  backgroundColor: '#E6E6E6'
+                })}
+              </ReportItems>
+              <Style>
+                <Border>
+                  <Style>Solid</Style>
+                  <Width>1pt</Width>
+                </Border>
+              </Style>
+              <Top>0in</Top>
+              <Left>0in</Left>
+              <Width>100%</Width>
+              <Height>100%</Height>
+            </Rectangle>
+          </CellContents>
+        </TablixCell>`;
+    });
+
+    return `
+      <TablixRow>
+        <Height>0.3in</Height>
+        <TablixCells>
+          ${headerCells.join('')}
+        </TablixCells>
+      </TablixRow>`;
+  }
+
+  private static generateTableDetailRow(headers: string[], mergedCells: any[]): string {
+    const detailCells = headers.map((header, colIndex) => {
+      const fieldName = this.sanitizeFieldName(header);
+      const dataType = this.inferDataType(header, []);
+      const isNumeric = dataType.includes('Decimal') || dataType.includes('Int');
+      
+      let format = '';
+      if (isNumeric && header.toLowerCase().includes('amount')) {
+        format = 'C';
+      } else if (isNumeric && !header.toLowerCase().includes('amount')) {
+        format = 'N0';
+      }
+      
+      return `
+        <TablixCell>
+          <CellContents>
+            <Rectangle Name="DataRect_${colIndex}">
+              <ReportItems>
+                ${this.generateCorrectTextbox(`DataText_${colIndex}`, `=Fields!${fieldName}.Value`, {
+                  top: '0in',
+                  left: '0in',
+                  width: '100%',
+                  height: '100%',
+                  textAlign: isNumeric ? 'Right' : 'Left',
+                  paddingLeft: '4pt',
+                  paddingRight: '4pt',
+                  format: format || undefined
+                })}
+              </ReportItems>
+              <Style>
+                <Border>
+                  <Style>Solid</Style>
+                  <Width>0.5pt</Width>
+                </Border>
+              </Style>
+              <Top>0in</Top>
+              <Left>0in</Left>
+              <Width>100%</Width>
+              <Height>100%</Height>
+            </Rectangle>
+          </CellContents>
+        </TablixCell>`;
+    });
+
+    return `
+      <TablixRow>
+        <Height>0.25in</Height>
+        <TablixCells>
+          ${detailCells.join('')}
+        </TablixCells>
+      </TablixRow>`;
+  }
+
   private static generateDefaultDataTable(topInches: number): string {
+    const headers = ['Description', 'Quantity', 'Unit Price', 'Total'];
+    const fields = ['Description', 'Quantity', 'UnitPrice', 'LineTotal'];
+    const formats = ['', 'N0', 'C', 'C'];
+    const alignments = ['Left', 'Right', 'Right', 'Right'];
+    
+    const columnWidths = [2, 1.5, 1.5, 1.5];
+    const tablixColumns = columnWidths.map(width => 
+      `<TablixColumn><Width>${width}in</Width></TablixColumn>`
+    ).join('');
+
+    const headerCells = headers.map((header, index) => `
+      <TablixCell>
+        <CellContents>
+          ${this.generateCorrectTextbox(`${header}Header`, header, {
+            top: '0in',
+            left: '0in',
+            width: '100%',
+            height: '100%',
+            textAlign: 'Center',
+            fontWeight: 'Bold',
+            backgroundColor: '#E6E6E6'
+          })}
+        </CellContents>
+      </TablixCell>`
+    ).join('');
+
+    const dataCells = fields.map((field, index) => `
+      <TablixCell>
+        <CellContents>
+          ${this.generateCorrectTextbox(`${field}Data`, `=Fields!${field}.Value`, {
+            top: '0in',
+            left: '0in',
+            width: '100%',
+            height: '100%',
+            textAlign: alignments[index],
+            paddingLeft: '4pt',
+            paddingRight: '4pt',
+            format: formats[index] || undefined
+          })}
+        </CellContents>
+      </TablixCell>`
+    ).join('');
+
     return `
       <Tablix Name="DefaultDataTable">
         <TablixBody>
           <TablixColumns>
-            <TablixColumn><Width>2in</Width></TablixColumn>
-            <TablixColumn><Width>1.5in</Width></TablixColumn>
-            <TablixColumn><Width>1.5in</Width></TablixColumn>
-            <TablixColumn><Width>1.5in</Width></TablixColumn>
+            ${tablixColumns}
           </TablixColumns>
           <TablixRows>
             <TablixRow>
               <Height>0.3in</Height>
               <TablixCells>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="DescriptionHeader">
-                      <Value>Description</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="QuantityHeader">
-                      <Value>Quantity</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="PriceHeader">
-                      <Value>Unit Price</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="TotalHeader">
-                      <Value>Total</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
+                ${headerCells}
               </TablixCells>
             </TablixRow>
             <TablixRow>
               <Height>0.25in</Height>
               <TablixCells>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="DescriptionData">
-                      <Value>=Fields!Description.Value</Value>
-                      <Style>
-                        <TextAlign>Left</TextAlign>
-                        <PaddingLeft>4pt</PaddingLeft>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="QuantityData">
-                      <Value>=Fields!Quantity.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                        <Format>N0</Format>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="PriceData">
-                      <Value>=Fields!UnitPrice.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                        <Format>C</Format>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="TotalData">
-                      <Value>=Fields!LineTotal.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                        <Format>C</Format>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
+                ${dataCells}
               </TablixCells>
             </TablixRow>
           </TablixRows>
@@ -488,114 +604,6 @@ export class RDLGenerator {
       </Tablix>`;
   }
 
-  private static generateTableHeaderRow(headers: string[], mergedCells: any[]): string {
-    const headerCells = headers.map((header, colIndex) => {
-      const mergedCell = mergedCells.find(mc => mc.row === 0 && mc.col === colIndex);
-      const colspan = mergedCell?.colspan || 1;
-      const rowspan = mergedCell?.rowspan || 1;
-      
-      return `
-        <TablixCell>
-          ${colspan > 1 ? `<ColSpan>${colspan}</ColSpan>` : ''}
-          ${rowspan > 1 ? `<RowSpan>${rowspan}</RowSpan>` : ''}
-          <CellContents>
-            <Rectangle Name="HeaderRect_${colIndex}">
-              <ReportItems>
-                <Textbox Name="HeaderText_${colIndex}">
-                  <Value>${this.escapeXMLValue(header)}</Value>
-                  <Style>
-                    <FontWeight>Bold</FontWeight>
-                    <BackgroundColor>#E6E6E6</BackgroundColor>
-                    <TextAlign>Center</TextAlign>
-                    <VerticalAlign>Middle</VerticalAlign>
-                    <PaddingLeft>2pt</PaddingLeft>
-                    <PaddingRight>2pt</PaddingRight>
-                    <PaddingTop>2pt</PaddingTop>
-                    <PaddingBottom>2pt</PaddingBottom>
-                  </Style>
-                  <Top>0in</Top>
-                  <Left>0in</Left>
-                  <Width>100%</Width>
-                  <Height>100%</Height>
-                </Textbox>
-              </ReportItems>
-              <Style>
-                <Border>
-                  <Style>Solid</Style>
-                  <Width>1pt</Width>
-                </Border>
-              </Style>
-              <Top>0in</Top>
-              <Left>0in</Left>
-              <Width>100%</Width>
-              <Height>100%</Height>
-            </Rectangle>
-          </CellContents>
-        </TablixCell>`;
-    });
-
-    return `
-      <TablixRow>
-        <Height>0.3in</Height>
-        <TablixCells>
-          ${headerCells.join('')}
-        </TablixCells>
-      </TablixRow>`;
-  }
-
-  private static generateTableDetailRow(headers: string[], mergedCells: any[]): string {
-    const detailCells = headers.map((header, colIndex) => {
-      const fieldName = this.sanitizeFieldName(header);
-      const dataType = this.inferDataType(header, []);
-      const isNumeric = dataType.includes('Decimal') || dataType.includes('Int');
-      
-      return `
-        <TablixCell>
-          <CellContents>
-            <Rectangle Name="DataRect_${colIndex}">
-              <ReportItems>
-                <Textbox Name="DataText_${colIndex}">
-                  <Value>=Fields!${fieldName}.Value</Value>
-                  <Style>
-                    <TextAlign>${isNumeric ? 'Right' : 'Left'}</TextAlign>
-                    <VerticalAlign>Middle</VerticalAlign>
-                    <PaddingLeft>4pt</PaddingLeft>
-                    <PaddingRight>4pt</PaddingRight>
-                    <PaddingTop>2pt</PaddingTop>
-                    <PaddingBottom>2pt</PaddingBottom>
-                    ${isNumeric && header.toLowerCase().includes('amount') ? '<Format>C</Format>' : ''}
-                    ${isNumeric && !header.toLowerCase().includes('amount') ? '<Format>N0</Format>' : ''}
-                  </Style>
-                  <Top>0in</Top>
-                  <Left>0in</Left>
-                  <Width>100%</Width>
-                  <Height>100%</Height>
-                </Textbox>
-              </ReportItems>
-              <Style>
-                <Border>
-                  <Style>Solid</Style>
-                  <Width>0.5pt</Width>
-                </Border>
-              </Style>
-              <Top>0in</Top>
-              <Left>0in</Left>
-              <Width>100%</Width>
-              <Height>100%</Height>
-            </Rectangle>
-          </CellContents>
-        </TablixCell>`;
-    });
-
-    return `
-      <TablixRow>
-        <Height>0.25in</Height>
-        <TablixCells>
-          ${detailCells.join('')}
-        </TablixCells>
-      </TablixRow>`;
-  }
-
   private static calculateColumnWidths(headers: string[], rows: any[][]): number[] {
     const minWidth = 0.8; // Minimum column width in inches
     const maxWidth = 2.5; // Maximum column width in inches
@@ -631,139 +639,78 @@ export class RDLGenerator {
 
     const isHeader = element.classification === 'header';
     
-    return `
-      <Textbox Name="TextElement_${index}">
-        <Value>${this.escapeXMLValue(element.content)}</Value>
-        <Style>
-          <FontSize>${isHeader ? '14pt' : '10pt'}</FontSize>
-          <FontWeight>${isHeader ? 'Bold' : 'Normal'}</FontWeight>
-          <TextAlign>${isHeader ? 'Center' : 'Left'}</TextAlign>
-          <PaddingLeft>2pt</PaddingLeft>
-          <PaddingRight>2pt</PaddingRight>
-          <PaddingTop>2pt</PaddingTop>
-          <PaddingBottom>2pt</PaddingBottom>
-        </Style>
-        <Top>${topInches.toFixed(2)}in</Top>
-        <Left>${leftInches}in</Left>
-        <Width>${widthInches}in</Width>
-        <Height>${heightInches}in</Height>
-        <ZIndex>${index}</ZIndex>
-      </Textbox>`;
+    return this.generateCorrectTextbox(`TextElement_${index}`, this.escapeXMLValue(element.content), {
+      top: `${topInches.toFixed(2)}in`,
+      left: `${leftInches}in`,
+      width: `${widthInches}in`,
+      height: `${heightInches}in`,
+      fontSize: isHeader ? '14pt' : '10pt',
+      fontWeight: isHeader ? 'Bold' : 'Normal',
+      textAlign: isHeader ? 'Center' : 'Left'
+    });
   }
 
   private static generateDefaultTable(): string {
+    const headers = ['Item', 'Qty', 'Price', 'Total'];
+    const fields = ['Description', 'Quantity', 'UnitPrice', 'LineTotal'];
+    const formats = ['', '', 'C', 'C'];
+    const alignments = ['Left', 'Right', 'Right', 'Right'];
+    
+    const columnWidths = [2, 1, 1.5, 1];
+    const tablixColumns = columnWidths.map(width => 
+      `<TablixColumn><Width>${width}in</Width></TablixColumn>`
+    ).join('');
+
+    const headerCells = headers.map((header, index) => `
+      <TablixCell>
+        <CellContents>
+          ${this.generateCorrectTextbox(`${header}Header`, header, {
+            top: '0in',
+            left: '0in',
+            width: '100%',
+            height: '100%',
+            textAlign: 'Center',
+            fontWeight: 'Bold',
+            backgroundColor: '#E6E6E6'
+          })}
+        </CellContents>
+      </TablixCell>`
+    ).join('');
+
+    const dataCells = fields.map((field, index) => `
+      <TablixCell>
+        <CellContents>
+          ${this.generateCorrectTextbox(`${field}Data`, `=Fields!${field}.Value`, {
+            top: '0in',
+            left: '0in',
+            width: '100%',
+            height: '100%',
+            textAlign: alignments[index],
+            paddingLeft: '4pt',
+            paddingRight: '4pt',
+            format: formats[index] || undefined
+          })}
+        </CellContents>
+      </TablixCell>`
+    ).join('');
+
     return `
       <Tablix Name="MainTable">
         <TablixBody>
           <TablixColumns>
-            <TablixColumn><Width>2in</Width></TablixColumn>
-            <TablixColumn><Width>1in</Width></TablixColumn>
-            <TablixColumn><Width>1.5in</Width></TablixColumn>
-            <TablixColumn><Width>1in</Width></TablixColumn>
+            ${tablixColumns}
           </TablixColumns>
           <TablixRows>
             <TablixRow>
               <Height>0.3in</Height>
               <TablixCells>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="ItemHeader">
-                      <Value>Item</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="QtyHeader">
-                      <Value>Qty</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="PriceHeader">
-                      <Value>Price</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="TotalHeader">
-                      <Value>Total</Value>
-                      <Style>
-                        <FontWeight>Bold</FontWeight>
-                        <BackgroundColor>#E6E6E6</BackgroundColor>
-                        <TextAlign>Center</TextAlign>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
+                ${headerCells}
               </TablixCells>
             </TablixRow>
             <TablixRow>
               <Height>0.25in</Height>
               <TablixCells>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="ItemData">
-                      <Value>=Fields!Description.Value</Value>
-                      <Style>
-                        <TextAlign>Left</TextAlign>
-                        <PaddingLeft>4pt</PaddingLeft>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="QtyData">
-                      <Value>=Fields!Quantity.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="PriceData">
-                      <Value>=Fields!UnitPrice.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                        <Format>C</Format>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
-                <TablixCell>
-                  <CellContents>
-                    <Textbox Name="TotalData">
-                      <Value>=Fields!LineTotal.Value</Value>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                        <PaddingRight>4pt</PaddingRight>
-                        <Format>C</Format>
-                      </Style>
-                    </Textbox>
-                  </CellContents>
-                </TablixCell>
+                ${dataCells}
               </TablixCells>
             </TablixRow>
           </TablixRows>
