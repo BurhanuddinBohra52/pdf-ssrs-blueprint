@@ -231,23 +231,39 @@ export class RDLGenerator {
     let reportItems = '';
     let currentTop = 0.5; // Start after some margin
 
-    // First, add text elements that are headers or labels outside tables
-    const nonTableTexts = analysisResult.textElements?.filter(el => 
-      el.classification === 'header' || el.classification === 'label'
+    // First, add header text elements
+    const headerTexts = analysisResult.textElements?.filter(el => 
+      el.classification === 'header'
     ) || [];
 
-    nonTableTexts.forEach((textEl, index) => {
+    headerTexts.forEach((textEl, index) => {
       const topInches = Math.max(currentTop, textEl.position.y / 72);
       reportItems += this.generateTextboxFromElement(textEl, index, topInches);
       currentTop = topInches + (textEl.position.height / 72) + 0.1;
     });
 
-    // Then add tables
-    analysisResult.tables?.forEach((table, index) => {
-      const topInches = Math.max(currentTop, table.position.y / 72);
-      reportItems += this.generateAdvancedTableXML(table, index, topInches);
-      currentTop = topInches + (table.position.height / 72) + 0.3;
+    // Then add body labels (non-header labels)
+    const bodyLabels = analysisResult.textElements?.filter(el => 
+      el.classification === 'label'
+    ) || [];
+
+    bodyLabels.forEach((textEl, index) => {
+      const topInches = Math.max(currentTop, textEl.position.y / 72);
+      reportItems += this.generateTextboxFromElement(textEl, index + headerTexts.length, topInches);
+      currentTop = topInches + (textEl.position.height / 72) + 0.1;
     });
+
+    // Generate tables for body content
+    if (analysisResult.tables && analysisResult.tables.length > 0) {
+      analysisResult.tables.forEach((table, index) => {
+        const topInches = Math.max(currentTop, table.position.y / 72);
+        reportItems += this.generateAdvancedTableXML(table, index, topInches);
+        currentTop = topInches + (table.position.height / 72) + 0.5;
+      });
+    } else {
+      // If no tables detected, create a default data table
+      reportItems += this.generateDefaultDataTable(currentTop);
+    }
 
     return reportItems || this.generateDefaultTable();
   }
@@ -312,6 +328,157 @@ export class RDLGenerator {
         <Width>${totalWidth.toFixed(2)}in</Width>
         <Height>1in</Height>
         <ZIndex>${index}</ZIndex>
+        <Style>
+          <Border>
+            <Style>Solid</Style>
+            <Width>1pt</Width>
+          </Border>
+        </Style>
+      </Tablix>`;
+  }
+
+  private static generateDefaultDataTable(topInches: number): string {
+    return `
+      <Tablix Name="DefaultDataTable">
+        <TablixBody>
+          <TablixColumns>
+            <TablixColumn><Width>2in</Width></TablixColumn>
+            <TablixColumn><Width>1.5in</Width></TablixColumn>
+            <TablixColumn><Width>1.5in</Width></TablixColumn>
+            <TablixColumn><Width>1.5in</Width></TablixColumn>
+          </TablixColumns>
+          <TablixRows>
+            <TablixRow>
+              <Height>0.3in</Height>
+              <TablixCells>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="DescriptionHeader">
+                      <Value>Description</Value>
+                      <Style>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="QuantityHeader">
+                      <Value>Quantity</Value>
+                      <Style>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="PriceHeader">
+                      <Value>Unit Price</Value>
+                      <Style>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="TotalHeader">
+                      <Value>Total</Value>
+                      <Style>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+              </TablixCells>
+            </TablixRow>
+            <TablixRow>
+              <Height>0.25in</Height>
+              <TablixCells>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="DescriptionData">
+                      <Value>=Fields!Description.Value</Value>
+                      <Style>
+                        <TextAlign>Left</TextAlign>
+                        <PaddingLeft>4pt</PaddingLeft>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="QuantityData">
+                      <Value>=Fields!Quantity.Value</Value>
+                      <Style>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
+                        <Format>N0</Format>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="PriceData">
+                      <Value>=Fields!UnitPrice.Value</Value>
+                      <Style>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
+                        <Format>C</Format>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="TotalData">
+                      <Value>=Fields!LineTotal.Value</Value>
+                      <Style>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
+                        <Format>C</Format>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+              </TablixCells>
+            </TablixRow>
+          </TablixRows>
+        </TablixBody>
+        <TablixColumnHierarchy>
+          <TablixMembers>
+            <TablixMember />
+            <TablixMember />
+            <TablixMember />
+            <TablixMember />
+          </TablixMembers>
+        </TablixColumnHierarchy>
+        <TablixRowHierarchy>
+          <TablixMembers>
+            <TablixMember>
+              <KeepWithGroup>After</KeepWithGroup>
+              <RepeatOnNewPage>true</RepeatOnNewPage>
+            </TablixMember>
+            <TablixMember>
+              <Group Name="Details_DefaultData" />
+            </TablixMember>
+          </TablixMembers>
+        </TablixRowHierarchy>
+        <DataSetName>MainDataSet</DataSetName>
+        <Top>${topInches.toFixed(2)}in</Top>
+        <Left>0in</Left>
+        <Width>6.5in</Width>
+        <Height>1in</Height>
         <Style>
           <Border>
             <Style>Solid</Style>
@@ -500,110 +667,50 @@ export class RDLGenerator {
               <TablixCells>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="HeaderRect_1">
-                      <ReportItems>
-                        <Textbox Name="DescriptionHeader">
-                          <Value>Description</Value>
-                          <Style>
-                            <FontWeight>Bold</FontWeight>
-                            <BackgroundColor>#E6E6E6</BackgroundColor>
-                            <TextAlign>Center</TextAlign>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="ItemHeader">
+                      <Value>Item</Value>
                       <Style>
-                        <Border><Style>Solid</Style></Border>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="HeaderRect_2">
-                      <ReportItems>
-                        <Textbox Name="QuantityHeader">
-                          <Value>Quantity</Value>
-                          <Style>
-                            <FontWeight>Bold</FontWeight>
-                            <BackgroundColor>#E6E6E6</BackgroundColor>
-                            <TextAlign>Center</TextAlign>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="QtyHeader">
+                      <Value>Qty</Value>
                       <Style>
-                        <Border><Style>Solid</Style></Border>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="HeaderRect_3">
-                      <ReportItems>
-                        <Textbox Name="UnitPriceHeader">
-                          <Value>Unit Price</Value>
-                          <Style>
-                            <FontWeight>Bold</FontWeight>
-                            <BackgroundColor>#E6E6E6</BackgroundColor>
-                            <TextAlign>Center</TextAlign>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="PriceHeader">
+                      <Value>Price</Value>
                       <Style>
-                        <Border><Style>Solid</Style></Border>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="HeaderRect_4">
-                      <ReportItems>
-                        <Textbox Name="AmountHeader">
-                          <Value>Amount</Value>
-                          <Style>
-                            <FontWeight>Bold</FontWeight>
-                            <BackgroundColor>#E6E6E6</BackgroundColor>
-                            <TextAlign>Center</TextAlign>
-                          </Style>
-                          <Top>0in</Top>
-                      <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="TotalHeader">
+                      <Value>Total</Value>
                       <Style>
-                        <Border><Style>Solid</Style></Border>
+                        <FontWeight>Bold</FontWeight>
+                        <BackgroundColor>#E6E6E6</BackgroundColor>
+                        <TextAlign>Center</TextAlign>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
               </TablixCells>
@@ -613,109 +720,48 @@ export class RDLGenerator {
               <TablixCells>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="DataRect_1">
-                      <ReportItems>
-                        <Textbox Name="Description">
-                          <Value>=Fields!Description.Value</Value>
-                          <Style>
-                            <TextAlign>Left</TextAlign>
-                            <PaddingLeft>4pt</PaddingLeft>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="ItemData">
+                      <Value>=Fields!Description.Value</Value>
                       <Style>
-                        <Border><Style>Solid</Style><Width>0.5pt</Width></Border>
+                        <TextAlign>Left</TextAlign>
+                        <PaddingLeft>4pt</PaddingLeft>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="DataRect_2">
-                      <ReportItems>
-                        <Textbox Name="Quantity">
-                          <Value>=Fields!Quantity.Value</Value>
-                          <Style>
-                            <TextAlign>Right</TextAlign>
-                            <Format>N0</Format>
-                            <PaddingRight>4pt</PaddingRight>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="QtyData">
+                      <Value>=Fields!Quantity.Value</Value>
                       <Style>
-                        <Border><Style>Solid</Style><Width>0.5pt</Width></Border>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="DataRect_3">
-                      <ReportItems>
-                        <Textbox Name="UnitPrice">
-                          <Value>=Fields!UnitPrice.Value</Value>
-                          <Style>
-                            <TextAlign>Right</TextAlign>
-                            <Format>C</Format>
-                            <PaddingRight>4pt</PaddingRight>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="PriceData">
+                      <Value>=Fields!UnitPrice.Value</Value>
                       <Style>
-                        <Border><Style>Solid</Style><Width>0.5pt</Width></Border>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
+                        <Format>C</Format>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
-                    <Rectangle Name="DataRect_4">
-                      <ReportItems>
-                        <Textbox Name="LineTotal">
-                          <Value>=Fields!LineTotal.Value</Value>
-                          <Style>
-                            <TextAlign>Right</TextAlign>
-                            <Format>C</Format>
-                            <PaddingRight>4pt</PaddingRight>
-                          </Style>
-                          <Top>0in</Top>
-                          <Left>0in</Left>
-                          <Width>100%</Width>
-                          <Height>100%</Height>
-                        </Textbox>
-                      </ReportItems>
+                    <Textbox Name="TotalData">
+                      <Value>=Fields!LineTotal.Value</Value>
                       <Style>
-                        <Border><Style>Solid</Style><Width>0.5pt</Width></Border>
+                        <TextAlign>Right</TextAlign>
+                        <PaddingRight>4pt</PaddingRight>
+                        <Format>C</Format>
                       </Style>
-                      <Top>0in</Top>
-                      <Left>0in</Left>
-                      <Width>100%</Width>
-                      <Height>100%</Height>
-                    </Rectangle>
+                    </Textbox>
                   </CellContents>
                 </TablixCell>
               </TablixCells>
@@ -742,10 +788,10 @@ export class RDLGenerator {
           </TablixMembers>
         </TablixRowHierarchy>
         <DataSetName>MainDataSet</DataSetName>
-        <Top>0.5in</Top>
+        <Top>2in</Top>
         <Left>0in</Left>
         <Width>5.5in</Width>
-        <Height>0.55in</Height>
+        <Height>1in</Height>
         <Style>
           <Border>
             <Style>Solid</Style>
@@ -755,37 +801,41 @@ export class RDLGenerator {
       </Tablix>`;
   }
 
-  // Utility methods
-  private static sanitizeFieldName(name: string): string {
-    if (!name) return 'Field1';
-    return name.replace(/[^a-zA-Z0-9_]/g, '').replace(/^[^a-zA-Z]/, 'Field_') || 'Field1';
+  private static sanitizeFieldName(text: string): string {
+    return text
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .trim()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('')
+      .replace(/\s/g, '');
   }
 
   private static inferDataType(header: string, rows: any[][]): string {
-    const headerLower = header.toLowerCase();
+    const lowerHeader = header.toLowerCase();
     
-    if (headerLower.includes('date') || headerLower.includes('time')) {
+    if (lowerHeader.includes('date') || lowerHeader.includes('time')) {
       return 'System.DateTime';
     }
-    if (headerLower.includes('amount') || headerLower.includes('price') || 
-        headerLower.includes('total') || headerLower.includes('cost')) {
+    if (lowerHeader.includes('amount') || lowerHeader.includes('price') || 
+        lowerHeader.includes('total') || lowerHeader.includes('cost')) {
       return 'System.Decimal';
     }
-    if (headerLower.includes('quantity') || headerLower.includes('count') || 
-        headerLower.includes('number') || headerLower.includes('id')) {
+    if (lowerHeader.includes('quantity') || lowerHeader.includes('qty') || 
+        lowerHeader.includes('count') || lowerHeader.includes('number')) {
       return 'System.Int32';
     }
     
     return 'System.String';
   }
 
-  private static escapeXMLValue(value: string): string {
-    if (!value) return '';
-    return value.replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&apos;');
+  private static escapeXMLValue(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private static generateGUID(): string {

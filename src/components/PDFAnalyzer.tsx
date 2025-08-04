@@ -686,9 +686,9 @@ export const PDFAnalyzer = () => {
                       <Database className="w-6 h-6 text-secondary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">Upload Base RDL File</h3>
+                      <h3 className="text-lg font-semibold">Upload Base RDL File (Optional)</h3>
                       <p className="text-muted-foreground text-sm">
-                        Select an RDL file with configured data sources
+                        Upload an existing RDL file to preserve data sources (optional)
                       </p>
                     </div>
                     <input
@@ -715,7 +715,7 @@ export const PDFAnalyzer = () => {
             </Card>
           </div>
           
-          {selectedFile && baseRDLFile && (
+          {selectedFile && (
             <Card className="p-6 bg-gradient-card shadow-card">
               <div className="text-center space-y-4">
                 <div className="flex items-center justify-center gap-3">
@@ -723,9 +723,9 @@ export const PDFAnalyzer = () => {
                     <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">Ready to Generate Executable RDL</h3>
+                    <h3 className="text-lg font-semibold">Ready to Analyze PDF</h3>
                     <p className="text-muted-foreground">
-                      Both PDF and base RDL files are uploaded. Analyze PDF to proceed.
+                      PDF file uploaded. Click analyze to generate RDL.
                     </p>
                   </div>
                 </div>
