@@ -37,7 +37,7 @@ export class RDLGenerator {
   static generateRDLTemplate(
     dataSources: RDLDataSource[] = [],
     dataSets: RDLDataSet[] = [],
-    pdfAnalysisResult?: PDFAnalysisResult
+    pdfAnalysisResult?: PDFAnalysisResult | any
   ): string {
     const defaultDataSource: RDLDataSource = {
       name: "DefaultDataSource",

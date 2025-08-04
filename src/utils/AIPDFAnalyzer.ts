@@ -193,7 +193,14 @@ export class AIPDFAnalyzer {
           tables.push(table);
           
           // Mark components as processed
-          [sortedRow, ...tableRows.flat()].forEach(comp => processedComponents.add(comp));
+          sortedRow.forEach(comp => processedComponents.add(comp));
+          tableRows.forEach(row => {
+            if (Array.isArray(row)) {
+              row.forEach(comp => processedComponents.add(comp));
+            } else {
+              processedComponents.add(row);
+            }
+          });
         }
       }
     }
@@ -323,7 +330,15 @@ export class AIPDFAnalyzer {
   }
 
   private static createTableStructure(headers: EnhancedPDFComponent[], rows: EnhancedPDFComponent[][]): TableStructure {
-    const allComponents = [headers, ...rows.flat()];
+    const allComponents: EnhancedPDFComponent[] = [...headers];
+    rows.forEach(row => {
+      if (Array.isArray(row)) {
+        allComponents.push(...row);
+      } else {
+        allComponents.push(row);
+      }
+    });
+    
     const minX = Math.min(...allComponents.map(c => c.x));
     const minY = Math.min(...allComponents.map(c => c.y));
     const maxX = Math.max(...allComponents.map(c => c.x + c.width));

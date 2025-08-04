@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Table, Type, Download, Layers, MapPin, Grid3X3, Database, Edit3 } from "lucide-react";
 import { PDFParser, PDFAnalysisResult as PDFParserResult } from "@/utils/PDFParser";
 import { EnhancedPDFParser } from "@/utils/EnhancedPDFParser";
-import { RDLGenerator } from "@/utils/RDLGenerator";
+import { RDLGenerator, PDFAnalysisResult } from "@/utils/RDLGenerator";
 import { RDLHeaderGenerator, HeaderTextbox } from "@/utils/RDLHeaderGenerator";
 import { PDFFieldEditor } from "@/components/PDFFieldEditor";
 
@@ -181,12 +181,33 @@ export const PDFAnalyzer = () => {
     if (enhancedResult?.headerAnalysis) {
       const headerAnalysis = enhancedResult.headerAnalysis;
       
+      // Determine proper section for each component based on Y position
+      const determineSection = (y: number, pageHeight: number): 'header' | 'body' | 'footer' => {
+        const headerThreshold = pageHeight * 0.2; // Top 20%
+        const footerThreshold = pageHeight * 0.8;  // Bottom 20%
+        
+        if (y < headerThreshold) return 'header';
+        if (y > footerThreshold) return 'footer';
+        return 'body';
+      };
+
+      // Find the page dimensions from all components
+      const allComponents = [
+        ...headerAnalysis.staticLabels,
+        ...headerAnalysis.dynamicData,
+        ...headerAnalysis.standaloneText
+      ];
+      const maxY = Math.max(...allComponents.map((comp: any) => comp.y + (comp.height || 20)));
+      const minY = Math.min(...allComponents.map((comp: any) => comp.y));
+      const pageHeight = maxY - minY;
+
       // Process static labels
       headerAnalysis.staticLabels.forEach((label: any, index: number) => {
+        const section = determineSection(label.y || 0, pageHeight);
         editableFields.push({
-          id: `header-static-${index}`,
+          id: `${section}-static-${index}`,
           type: 'textbox',
-          section: 'header',
+          section,
           x: label.x || 0,
           y: label.y || 0,
           width: label.width || 100,
@@ -204,10 +225,11 @@ export const PDFAnalyzer = () => {
       
       // Process dynamic data
       headerAnalysis.dynamicData.forEach((data: any, index: number) => {
+        const section = determineSection(data.y || 0, pageHeight);
         editableFields.push({
-          id: `header-dynamic-${index}`,
+          id: `${section}-dynamic-${index}`,
           type: 'textbox',
-          section: 'header',
+          section,
           x: data.x || 0,
           y: data.y || 0,
           width: data.width || 100,
@@ -227,10 +249,11 @@ export const PDFAnalyzer = () => {
       
       // Process standalone text
       headerAnalysis.standaloneText.forEach((text: any, index: number) => {
+        const section = determineSection(text.y || 0, pageHeight);
         editableFields.push({
-          id: `header-standalone-${index}`,
+          id: `${section}-standalone-${index}`,
           type: 'textbox',
-          section: 'header',
+          section,
           x: text.x || 0,
           y: text.y || 0,
           width: text.width || 100,
@@ -275,28 +298,48 @@ export const PDFAnalyzer = () => {
       footer: [] as PDFComponent[]
     };
 
-    // Convert each section's text items to components
-    pdfAnalysis.sections.forEach((section, sectionIndex) => {
-      section.items.forEach((item, itemIndex) => {
-        const component: PDFComponent = {
-          id: `${section.type}-${sectionIndex}-${itemIndex}`,
-          type: 'textbox',
-          section: section.type,
-          x: Math.round(item.x),
-          y: Math.round(item.y),
-          width: Math.round(item.width || 100),
-          height: Math.round(item.height || 20),
-          content: item.text,
-          styles: {
-            fontSize: Math.round(item.fontSize),
-            fontFamily: item.fontFamily,
-            alignment: 'left'
-          }
-        };
-        
-        components.push(component);
-        sections[section.type].push(component);
-      });
+    // Better section classification based on Y position
+    const allItems = pdfAnalysis.sections.flatMap(section => 
+      section.items.map(item => ({...item, originalSection: section.type}))
+    );
+    
+    // Calculate page dimensions for better section classification
+    const maxY = Math.max(...allItems.map(item => item.y + (item.height || 20)));
+    const minY = Math.min(...allItems.map(item => item.y));
+    const pageHeight = maxY - minY;
+    
+    // Define section thresholds
+    const headerThreshold = minY + (pageHeight * 0.25); // Top 25%
+    const footerThreshold = maxY - (pageHeight * 0.15);  // Bottom 15%
+
+    // Convert each item to component with proper section classification
+    allItems.forEach((item, itemIndex) => {
+      // Determine proper section based on Y position
+      let section: 'header' | 'body' | 'footer' = 'body';
+      if (item.y < headerThreshold) {
+        section = 'header';
+      } else if (item.y + (item.height || 20) > footerThreshold) {
+        section = 'footer';
+      }
+
+      const component: PDFComponent = {
+        id: `${section}-${itemIndex}`,
+        type: 'textbox',
+        section: section,
+        x: Math.round(item.x),
+        y: Math.round(item.y),
+        width: Math.round(item.width || 100),
+        height: Math.round(item.height || 20),
+        content: item.text,
+        styles: {
+          fontSize: Math.round(item.fontSize),
+          fontFamily: item.fontFamily,
+          alignment: 'left'
+        }
+      };
+      
+      components.push(component);
+      sections[section].push(component);
     });
 
     // Convert detected tables to table components
@@ -430,9 +473,27 @@ export const PDFAnalyzer = () => {
   const generateRDLTemplate = () => {
     if (!analysisResult && !editableFields.length) return '';
     
-    // Use edited fields if available, otherwise fall back to analysis result
-    const componentsToUse = editableFields.length > 0 ? editableFields : analysisResult?.components || [];
-    return RDLGenerator.generateRDLTemplate([], [], componentsToUse);
+    // Create proper PDFAnalysisResult structure
+    const pdfAnalysisResult: PDFAnalysisResult = {
+      tables: analysisResult?.sections.body
+        .filter(comp => comp.type === 'table')
+        .map(comp => ({
+          headers: comp.tableData?.cells[0] || [],
+          rows: comp.tableData?.cells.slice(1) || [],
+          position: { x: comp.x, y: comp.y, width: comp.width, height: comp.height },
+          merged_cells: []
+        })) || [],
+      textElements: (editableFields.length > 0 ? editableFields : analysisResult?.components || [])
+        .filter(comp => comp.type === 'textbox')
+        .map(comp => ({
+          content: comp.content || '',
+          position: { x: comp.x, y: comp.y, width: comp.width, height: comp.height },
+          classification: comp.section as 'header' | 'footer' | 'label' | 'data',
+          styles: comp.styles
+        }))
+    };
+    
+    return RDLGenerator.generateRDLTemplate([], [], pdfAnalysisResult);
   };
 
   const handleFieldsChange = (updatedFields: PDFComponent[]) => {
@@ -963,70 +1024,6 @@ export const PDFAnalyzer = () => {
         <TabsContent value="rdl" className="space-y-6">
           {analysisResult && (
             <>
-              {baseRDLContent ? (
-                <Card className="p-6 bg-gradient-card shadow-card border border-green-500/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-500/10 rounded-lg">
-                        <Database className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">Executable RDL Generator</h3>
-                        <p className="text-muted-foreground">
-                          Generate executable RDL with updated header from your base RDL file
-                        </p>
-                      </div>
-                    </div>
-                    <Button onClick={downloadExecutableRDL} variant="default" size="lg">
-                      <Download className="w-4 h-4" />
-                      Download Executable RDL
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Executable RDL Features:</h4>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                          Preserves existing data sources
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                          Updates header with PDF layout
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                          Comments out body for R&D
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                          Ready for immediate deployment
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                          Maintains proper XML structure
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Header Components Found:</h4>
-                      <div className="space-y-2">
-                        {analysisResult.sections.header.map((component, index) => (
-                          <div key={component.id} className="text-sm bg-muted/50 p-2 rounded">
-                            <span className="font-medium">Textbox{index + 1}:</span> {component.content || 'Header Text'}
-                          </div>
-                        ))}
-                        {analysisResult.sections.header.length === 0 && (
-                          <p className="text-sm text-muted-foreground">No header components detected</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ) : null}
-
               <Card className="p-6 bg-gradient-card shadow-card">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -1034,21 +1031,21 @@ export const PDFAnalyzer = () => {
                       <Database className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">RDL Template Generator</h3>
+                      <h3 className="text-lg font-semibold">Download RDL</h3>
                       <p className="text-muted-foreground">
-                        Download RDL template with data source and dataset fields for editing
+                        Download complete RDL with enhanced PDF layout analysis
                       </p>
                     </div>
                   </div>
-                  <Button onClick={downloadRDLTemplate} variant="hero" size="lg">
+                  <Button onClick={downloadRDLTemplate} variant="default" size="lg">
                     <Download className="w-4 h-4" />
-                    Download RDL Template
+                    Download RDL
                   </Button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h4 className="font-medium">Template Features:</h4>
+                    <h4 className="font-medium">RDL Features:</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-primary rounded-full" />
@@ -1056,15 +1053,15 @@ export const PDFAnalyzer = () => {
                       </li>
                       <li className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Enhanced PDF table structure analysis
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        Proper header and body section separation
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                         Dataset with customizable fields
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                        Report parameters setup
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                        Layout based on PDF analysis
                       </li>
                       <li className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-primary rounded-full" />
@@ -1074,42 +1071,31 @@ export const PDFAnalyzer = () => {
                   </div>
                   
                   <div className="space-y-4">
-                    <h4 className="font-medium">Next Steps:</h4>
-                    <ol className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex gap-2">
-                        <span className="text-primary font-medium">1.</span>
-                        Download the RDL template file
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-primary font-medium">2.</span>
-                        Open in SQL Server Report Builder
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-primary font-medium">3.</span>
-                        Edit data source connection string
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-primary font-medium">4.</span>
-                        Customize dataset fields and queries
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-primary font-medium">5.</span>
-                        Deploy to SSRS server
-                      </li>
-                    </ol>
+                    <h4 className="font-medium">Components Found:</h4>
+                    <div className="space-y-2">
+                      <div className="text-sm bg-blue-500/10 p-2 rounded border border-blue-200">
+                        <span className="font-medium text-blue-700">Header:</span> {analysisResult.sections.header.length} components
+                      </div>
+                      <div className="text-sm bg-green-500/10 p-2 rounded border border-green-200">
+                        <span className="font-medium text-green-700">Body:</span> {analysisResult.sections.body.length} components
+                      </div>
+                      <div className="text-sm bg-purple-500/10 p-2 rounded border border-purple-200">
+                        <span className="font-medium text-purple-700">Tables:</span> {analysisResult.sections.body.filter(c => c.type === 'table').length} detected
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>
 
               <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">RDL Template Preview</h3>
+                <h3 className="text-lg font-semibold mb-4">RDL Preview</h3>
                 <div className="bg-muted/30 p-4 rounded-lg max-h-96 overflow-y-auto">
                   <pre className="text-xs whitespace-pre-wrap">
                     {generateRDLTemplate().substring(0, 2000)}...
                   </pre>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  This is a preview of the RDL template. Download the complete file to edit all data source and dataset configurations.
+                  This is a preview of the RDL file with proper component placement and table structures.
                 </p>
               </Card>
             </>
