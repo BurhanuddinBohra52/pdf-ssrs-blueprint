@@ -220,7 +220,7 @@ export class RDLGenerator {
 </Report>`;
   }
 
-  // Corrected method to generate SSRS 2016+ compliant textboxes
+  // Corrected method to generate SSRS 2016+ compliant textboxes with absolute units
   private static generateCorrectTextbox(
     name: string,
     value: string,
@@ -238,6 +238,8 @@ export class RDLGenerator {
       paddingRight?: string;
       paddingTop?: string;
       paddingBottom?: string;
+      parentWidth?: number; // in inches, for calculating relative sizes
+      parentHeight?: number; // in inches, for calculating relative sizes
     }
   ): string {
     const {
@@ -250,8 +252,14 @@ export class RDLGenerator {
       paddingLeft = '2pt',
       paddingRight = '2pt',
       paddingTop = '2pt',
-      paddingBottom = '2pt'
+      paddingBottom = '2pt',
+      parentWidth,
+      parentHeight
     } = options;
+
+    // Convert percentage widths/heights to absolute measurements
+    const finalWidth = this.convertToAbsoluteUnit(width, parentWidth);
+    const finalHeight = this.convertToAbsoluteUnit(height, parentHeight);
 
     return `
       <Textbox Name="${name}">
@@ -277,8 +285,8 @@ export class RDLGenerator {
         <rd:DefaultName>${name}</rd:DefaultName>
         <Top>${top}</Top>
         <Left>${left}</Left>
-        <Height>${height}</Height>
-        <Width>${width}</Width>
+        <Height>${finalHeight}</Height>
+        <Width>${finalWidth}</Width>
         <Style>
           ${backgroundColor ? `<BackgroundColor>${backgroundColor}</BackgroundColor>` : ''}
           <Border>
@@ -290,6 +298,20 @@ export class RDLGenerator {
           <PaddingBottom>${paddingBottom}</PaddingBottom>
         </Style>
       </Textbox>`;
+  }
+
+  // Helper method to convert percentage or relative units to absolute units
+  private static convertToAbsoluteUnit(value: string, parentSize?: number): string {
+    if (value.endsWith('%')) {
+      const percentage = parseFloat(value.replace('%', ''));
+      if (parentSize) {
+        return `${(parentSize * percentage / 100).toFixed(3)}in`;
+      } else {
+        // Default fallback if no parent size provided
+        return value === '100%' ? '1in' : '0.5in';
+      }
+    }
+    return value;
   }
 
   private static generateReportItemsFromPDF(analysisResult?: PDFAnalysisResult): string {
@@ -356,10 +378,10 @@ export class RDLGenerator {
     ).join('');
 
     // Generate header row
-    const headerRow = this.generateTableHeaderRow(headers, mergedCells);
+    const headerRow = this.generateTableHeaderRow(headers, mergedCells, columnWidths);
     
     // Generate detail row
-    const detailRow = this.generateTableDetailRow(headers, mergedCells);
+    const detailRow = this.generateTableDetailRow(headers, mergedCells, columnWidths);
 
     // Generate column hierarchy (static columns)
     const columnMembers = headers.map(() => '<TablixMember />').join('');
@@ -406,11 +428,13 @@ export class RDLGenerator {
       </Tablix>`;
   }
 
-  private static generateTableHeaderRow(headers: string[], mergedCells: any[]): string {
+  private static generateTableHeaderRow(headers: string[], mergedCells: any[], columnWidths: number[]): string {
     const headerCells = headers.map((header, colIndex) => {
       const mergedCell = mergedCells.find(mc => mc.row === 0 && mc.col === colIndex);
       const colspan = mergedCell?.colspan || 1;
       const rowspan = mergedCell?.rowspan || 1;
+      const cellWidth = columnWidths[colIndex] || 1.5;
+      const textWidth = cellWidth - 0.02; // Padding adjustment
       
       return `
         <TablixCell>
@@ -422,8 +446,8 @@ export class RDLGenerator {
                 ${this.generateCorrectTextbox(`HeaderText_${colIndex}`, this.escapeXMLValue(header), {
                   top: '0in',
                   left: '0in',
-                  width: '100%',
-                  height: '100%',
+                  width: `${textWidth.toFixed(3)}in`,
+                  height: '0.28in',
                   textAlign: 'Center',
                   fontWeight: 'Bold',
                   backgroundColor: '#E6E6E6'
@@ -437,8 +461,8 @@ export class RDLGenerator {
               </Style>
               <Top>0in</Top>
               <Left>0in</Left>
-              <Width>100%</Width>
-              <Height>100%</Height>
+              <Width>${cellWidth.toFixed(3)}in</Width>
+              <Height>0.3in</Height>
             </Rectangle>
           </CellContents>
         </TablixCell>`;
@@ -453,11 +477,13 @@ export class RDLGenerator {
       </TablixRow>`;
   }
 
-  private static generateTableDetailRow(headers: string[], mergedCells: any[]): string {
+  private static generateTableDetailRow(headers: string[], mergedCells: any[], columnWidths: number[]): string {
     const detailCells = headers.map((header, colIndex) => {
       const fieldName = this.sanitizeFieldName(header);
       const dataType = this.inferDataType(header, []);
       const isNumeric = dataType.includes('Decimal') || dataType.includes('Int');
+      const cellWidth = columnWidths[colIndex] || 1.5;
+      const textWidth = cellWidth - 0.02; // Padding adjustment
       
       let format = '';
       if (isNumeric && header.toLowerCase().includes('amount')) {
@@ -474,8 +500,8 @@ export class RDLGenerator {
                 ${this.generateCorrectTextbox(`DataText_${colIndex}`, `=Fields!${fieldName}.Value`, {
                   top: '0in',
                   left: '0in',
-                  width: '100%',
-                  height: '100%',
+                  width: `${textWidth.toFixed(3)}in`,
+                  height: '0.23in',
                   textAlign: isNumeric ? 'Right' : 'Left',
                   paddingLeft: '4pt',
                   paddingRight: '4pt',
@@ -490,8 +516,8 @@ export class RDLGenerator {
               </Style>
               <Top>0in</Top>
               <Left>0in</Left>
-              <Width>100%</Width>
-              <Height>100%</Height>
+              <Width>${cellWidth.toFixed(3)}in</Width>
+              <Height>0.25in</Height>
             </Rectangle>
           </CellContents>
         </TablixCell>`;
@@ -517,38 +543,46 @@ export class RDLGenerator {
       `<TablixColumn><Width>${width}in</Width></TablixColumn>`
     ).join('');
 
-    const headerCells = headers.map((header, index) => `
+    const headerCells = headers.map((header, index) => {
+      const cellWidth = columnWidths[index];
+      const textWidth = cellWidth - 0.02;
+      
+      return `
       <TablixCell>
         <CellContents>
           ${this.generateCorrectTextbox(`${header}Header`, header, {
             top: '0in',
             left: '0in',
-            width: '100%',
-            height: '100%',
+            width: `${textWidth.toFixed(3)}in`,
+            height: '0.28in',
             textAlign: 'Center',
             fontWeight: 'Bold',
             backgroundColor: '#E6E6E6'
           })}
         </CellContents>
-      </TablixCell>`
-    ).join('');
+      </TablixCell>`;
+    }).join('');
 
-    const dataCells = fields.map((field, index) => `
+    const dataCells = fields.map((field, index) => {
+      const cellWidth = columnWidths[index];
+      const textWidth = cellWidth - 0.02;
+      
+      return `
       <TablixCell>
         <CellContents>
           ${this.generateCorrectTextbox(`${field}Data`, `=Fields!${field}.Value`, {
             top: '0in',
             left: '0in',
-            width: '100%',
-            height: '100%',
+            width: `${textWidth.toFixed(3)}in`,
+            height: '0.23in',
             textAlign: alignments[index],
             paddingLeft: '4pt',
             paddingRight: '4pt',
             format: formats[index] || undefined
           })}
         </CellContents>
-      </TablixCell>`
-    ).join('');
+      </TablixCell>`;
+    }).join('');
 
     return `
       <Tablix Name="DefaultDataTable">
@@ -661,38 +695,46 @@ export class RDLGenerator {
       `<TablixColumn><Width>${width}in</Width></TablixColumn>`
     ).join('');
 
-    const headerCells = headers.map((header, index) => `
+    const headerCells = headers.map((header, index) => {
+      const cellWidth = columnWidths[index];
+      const textWidth = cellWidth - 0.02;
+      
+      return `
       <TablixCell>
         <CellContents>
           ${this.generateCorrectTextbox(`${header}Header`, header, {
             top: '0in',
             left: '0in',
-            width: '100%',
-            height: '100%',
+            width: `${textWidth.toFixed(3)}in`,
+            height: '0.28in',
             textAlign: 'Center',
             fontWeight: 'Bold',
             backgroundColor: '#E6E6E6'
           })}
         </CellContents>
-      </TablixCell>`
-    ).join('');
+      </TablixCell>`;
+    }).join('');
 
-    const dataCells = fields.map((field, index) => `
+    const dataCells = fields.map((field, index) => {
+      const cellWidth = columnWidths[index];
+      const textWidth = cellWidth - 0.02;
+      
+      return `
       <TablixCell>
         <CellContents>
           ${this.generateCorrectTextbox(`${field}Data`, `=Fields!${field}.Value`, {
             top: '0in',
             left: '0in',
-            width: '100%',
-            height: '100%',
+            width: `${textWidth.toFixed(3)}in`,
+            height: '0.23in',
             textAlign: alignments[index],
             paddingLeft: '4pt',
             paddingRight: '4pt',
             format: formats[index] || undefined
           })}
         </CellContents>
-      </TablixCell>`
-    ).join('');
+      </TablixCell>`;
+    }).join('');
 
     return `
       <Tablix Name="MainTable">
@@ -748,17 +790,37 @@ export class RDLGenerator {
       </Tablix>`;
   }
 
+  // Enhanced method to calculate proper absolute dimensions for table cells
+  private static calculateCellDimensions(columnWidths: number[], rowHeight: number = 0.25): {
+    cellWidths: string[];
+    cellHeight: string;
+    textWidths: string[];
+    textHeight: string;
+  } {
+    const padding = 0.02; // 2pt padding converted to inches
+    
+    return {
+      cellWidths: columnWidths.map(w => `${w}in`),
+      cellHeight: `${rowHeight}in`,
+      textWidths: columnWidths.map(w => `${w - padding}in`), // Slightly smaller for text
+      textHeight: `${rowHeight - padding}in`
+    };
+  }
+
   private static sanitizeFieldName(text: string): string {
+    if (!text) return 'Field1';
     return text
       .replace(/[^a-zA-Z0-9\s]/g, '')
       .trim()
       .split(/\s+/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join('')
-      .replace(/\s/g, '');
+      .replace(/\s/g, '') || 'Field1';
   }
 
   private static inferDataType(header: string, rows: any[][]): string {
+    if (!header) return 'System.String';
+    
     const lowerHeader = header.toLowerCase();
     
     if (lowerHeader.includes('date') || lowerHeader.includes('time')) {
@@ -777,6 +839,7 @@ export class RDLGenerator {
   }
 
   private static escapeXMLValue(text: string): string {
+    if (!text) return '';
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
